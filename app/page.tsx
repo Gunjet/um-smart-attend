@@ -1473,7 +1473,7 @@ const reportStudents = Array.from(
                       />
                     </div>
                     {showAttendanceDetails && (
-                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 pl-0 text-[10px] sm:pl-15">
+                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 pl-0 text-[12px] sm:pl-15">
                         <span className="text-emerald-700">
                           {attended} ирсэн
                         </span>
