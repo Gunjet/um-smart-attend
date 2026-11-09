@@ -1,0 +1,40 @@
+export type Role = "teacher" | "student";
+
+export type AttendanceStatus =
+  "Ирсэн" | "Хоцорсон" | "Тасалсан" | "Хүлээгдэж байна";
+
+export type Student = {
+  id: string;
+  name: string;
+  initials: string;
+  /** Бүртгүүлсэн цаг (HH:MM) эсвэл "—". */
+  time: string;
+  status: AttendanceStatus;
+};
+
+export type Course = {
+  title: string;
+  code: string;
+  room: string;
+  /** "09:00 — 10:30" хэлбэртэй. */
+  time: string;
+  /** Хичээлд бүртгэлтэй оюутны тоо. */
+  enrolled: number;
+};
+
+/** Нэг хичээллэлтийн хаагдсан ирцийн бүртгэл. */
+export type AttendanceRecord = {
+  /** YYYY-MM-DD (локал цагаар). */
+  date: string;
+  courseCode: string;
+  courseTitle: string;
+  students: Student[];
+};
+
+export type AttendanceSession = {
+  id: string;
+  courseIndex: number;
+  startedAt: number;
+};
+
+export type Notify = (message: string) => void;

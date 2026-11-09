@@ -13,3 +13,18 @@
 	--color-emerald-900: #102052;
 	--color-emerald-950: #0a153b;
 }
+
+@layer base {
+	/* Tailwind v4 товчны курсорыг анхдагчаар pointer болгодоггүй. */
+	button:not(:disabled),
+	[role="button"]:not(:disabled),
+	select {
+		cursor: pointer;
+	}
+
+	/* Гараар (Tab) удирдахад хаана байгааг тод харуулна. */
+	:focus-visible {
+		outline: 2px solid var(--color-emerald-600);
+		outline-offset: 2px;
+	}
+}
