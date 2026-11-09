@@ -8,25 +8,18 @@ import type {
 
 export type StatusCounts = {
   present: number;
-  late: number;
   absent: number;
   pending: number;
 };
 
 export function countStatuses(students: Student[]): StatusCounts {
-  const counts: StatusCounts = { present: 0, late: 0, absent: 0, pending: 0 };
+  const counts: StatusCounts = { present: 0, absent: 0, pending: 0 };
   for (const { status } of students) {
     if (status === STATUS.present) counts.present += 1;
-    else if (status === STATUS.late) counts.late += 1;
     else if (status === STATUS.absent) counts.absent += 1;
     else counts.pending += 1;
   }
   return counts;
-}
-
-/** Ирцийн хувь = (ирсэн + хоцорсон) / нийт. */
-export function attendanceRate(present: number, late: number, total: number) {
-  return total > 0 ? Math.round(((present + late) / total) * 100) : 0;
 }
 
 export type StudentAttendanceRow = {

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { attendanceRate, countStatuses } from "../../_lib/attendance";
+import { countStatuses } from "../../_lib/attendance";
 import { STATUS, STATUS_TEXT_CLASS } from "../../_lib/constants";
 import type { AttendanceStatus, Student } from "../../_lib/types";
 import { cx, ProgressBar } from "../ui";
 
-type Filter = "all" | "pending" | "late" | "absent";
+type Filter = "all" | "pending" | "absent";
 
 const FILTERS: { id: Filter; label: string; activeClass: string }[] = [
   {
@@ -20,11 +20,6 @@ const FILTERS: { id: Filter; label: string; activeClass: string }[] = [
     activeClass: "border-slate-400 bg-slate-100 text-slate-800",
   },
   {
-    id: "late",
-    label: STATUS.late,
-    activeClass: "border-amber-300 bg-amber-50 text-amber-800",
-  },
-  {
     id: "absent",
     label: STATUS.absent,
     activeClass: "border-rose-300 bg-rose-50 text-rose-800",
@@ -33,7 +28,6 @@ const FILTERS: { id: Filter; label: string; activeClass: string }[] = [
 
 const FILTER_STATUS: Record<Exclude<Filter, "all">, AttendanceStatus> = {
   pending: STATUS.pending,
-  late: STATUS.late,
   absent: STATUS.absent,
 };
 
@@ -46,11 +40,6 @@ const MARK_OPTIONS: {
     status: STATUS.present,
     label: "Ирсэн",
     activeClass: "bg-emerald-700 text-white",
-  },
-  {
-    status: STATUS.late,
-    label: "Хоцорсон",
-    activeClass: "bg-amber-500 text-white",
   },
   {
     status: STATUS.absent,
@@ -75,13 +64,12 @@ export function LiveRoster({
   const [filter, setFilter] = useState<Filter>("all");
 
   const counts = countStatuses(roster);
-  const registered = counts.present + counts.late;
+  const registered = counts.present;
   const total = roster.length || enrolled;
-  const progress = attendanceRate(counts.present, counts.late, total);
+  const progress = total > 0 ? (registered / total) * 100 : 0;
   const filterCount: Record<Filter, number> = {
     all: roster.length,
     pending: counts.pending,
-    late: counts.late,
     absent: counts.absent,
   };
 

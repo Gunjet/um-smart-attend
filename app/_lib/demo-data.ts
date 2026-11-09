@@ -85,9 +85,9 @@ const COURSE_WEEKDAYS = [[1, 3], [2, 4], [5]];
 
 /** Оюутны "Миний ирц" хэсгийн demo үзүүлэлт, COURSES-ийн дарааллаар. */
 export const STUDENT_COURSE_HISTORY = [
-  { teacher: "Багш Б. Бат-Эрдэнэ", meetings: 14, late: 2, absent: 1 },
-  { teacher: "Багш Д. Саруул", meetings: 12, late: 1, absent: 0 },
-  { teacher: "Багш О. Тэмүүлэн", meetings: 9, late: 1, absent: 2 },
+  { teacher: "Багш Б. Бат-Эрдэнэ", meetings: 14, absent: 1 },
+  { teacher: "Багш Д. Саруул", meetings: 12, absent: 0 },
+  { teacher: "Багш О. Тэмүүлэн", meetings: 9, absent: 2 },
 ];
 
 export type StudentProfile = {
@@ -155,14 +155,8 @@ export function buildDemoHistory(today: number): AttendanceRecord[] {
           // Зарим оюутан илүү тасалдаг байхаар тохируулна.
           const extraRisk = studentIndex % 9 === 5 ? 0.2 : 0;
           const status: AttendanceStatus =
-            roll < 0.05 + extraRisk
-              ? STATUS.absent
-              : roll < 0.13 + extraRisk
-                ? STATUS.late
-                : STATUS.present;
-          const jitter = Math.floor(roll * 1000);
-          const delay =
-            status === STATUS.late ? 10 + (jitter % 20) : jitter % 6;
+            roll < 0.07 + extraRisk ? STATUS.absent : STATUS.present;
+          const delay = Math.floor(roll * 1000) % 10;
           return {
             ...student,
             status,

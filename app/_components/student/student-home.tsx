@@ -26,10 +26,7 @@ export function StudentHome({
   const myRecord = session
     ? roster.find((entry) => entry.id === student.code)
     : undefined;
-  const registered =
-    myRecord?.status === STATUS.present || myRecord?.status === STATUS.late
-      ? myRecord
-      : undefined;
+  const registered = myRecord?.status === STATUS.present ? myRecord : undefined;
 
   return (
     <div className="mx-auto max-w-2xl px-4 pb-24 pt-5 sm:px-6 md:ml-60 md:pt-8">

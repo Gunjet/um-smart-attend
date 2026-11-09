@@ -78,7 +78,7 @@ export function TeacherDashboard({
         selectedIndex={selectedIndex}
         liveIndex={session?.courseIndex ?? null}
         closedIndex={lastCourseIndex}
-        presentCount={counts.present + counts.late}
+        presentCount={counts.present}
         onSelect={selectCourse}
       />
 

@@ -13,9 +13,6 @@ import type {
   Student,
 } from "../_lib/types";
 
-/** Session эхэлснээс хойш энэ хугацааны дараа бүртгүүлбэл "Хоцорсон". */
-const LATE_AFTER_MS = 15 * 60_000;
-
 /**
  * Ирцийн бүх төлөв: идэвхтэй session, түүний жагсаалт, хаагдсан бүртгэлүүд.
  * Багш, оюутны дэлгэц нэг төлөвийг хуваалцана (demo — санах ойд).
@@ -70,17 +67,11 @@ export function useAttendance() {
     (studentCode: string) => {
       if (!session) return null;
       const timestamp = Date.now();
-      const status =
-        timestamp - session.startedAt > LATE_AFTER_MS
-          ? STATUS.late
-          : STATUS.present;
+      const status = STATUS.present;
       const time = formatClock(timestamp);
       const existing = roster.find((student) => student.id === studentCode);
       // Дахин бүртгүүлэхэд анхны цагийг нь хадгална.
-      if (
-        existing &&
-        (existing.status === STATUS.present || existing.status === STATUS.late)
-      ) {
+      if (existing && existing.status === STATUS.present) {
         return { status: existing.status, time: existing.time };
       }
 
@@ -110,10 +101,7 @@ export function useAttendance() {
   /** Багш идэвхтэй session-д оюутны төлвийг гараар өөрчилнө. */
   const markStudent = useCallback(
     (studentId: string, status: AttendanceStatus) => {
-      const time =
-        status === STATUS.present || status === STATUS.late
-          ? formatClock(Date.now())
-          : "—";
+      const time = status === STATUS.present ? formatClock(Date.now()) : "—";
       setRoster((current) =>
         current.map((student) =>
           student.id === studentId

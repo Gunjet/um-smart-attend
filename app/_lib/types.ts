@@ -1,7 +1,6 @@
 export type Role = "teacher" | "student";
 
-export type AttendanceStatus =
-  "Ирсэн" | "Хоцорсон" | "Тасалсан" | "Хүлээгдэж байна";
+export type AttendanceStatus = "Ирсэн" | "Тасалсан" | "Хүлээгдэж байна";
 
 export type Student = {
   id: string;
