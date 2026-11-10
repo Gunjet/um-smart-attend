@@ -18,8 +18,6 @@
 
   /* Карт, самбарын дэвсгэр. text-white-ийг өөрчлөхгүйн тулд bg-white-ийн оронд. */
   --color-surface: #ffffff;
-  /* Графикийн өнгө (dataviz шалгуураар баталгаажсан: lightness band, 3:1 contrast). */
-  --color-chart: #3d56c4;
 }
 
 /*
@@ -30,7 +28,6 @@
   color-scheme: dark;
 
   --color-surface: #111111;
-  --color-chart: #4f6ae0;
 
   /* Саарал өнгийг хөх туяагүй, цэвэр хар-саарал болгоно. */
   --color-slate-50: #000000;

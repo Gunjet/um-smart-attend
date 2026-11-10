@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { AdminApp } from "./_components/admin/admin-app";
 import { StudentApp, TeacherApp } from "./_components/attendance-app";
 import { LoginScreen } from "./_components/login-screen";
-import { getAttendanceStats } from "./_server/admin/stats";
 import { listUsersForAdmin } from "./_server/admin/users";
 import { getCurrentUser } from "./_server/auth/dal";
 import { hasPasskey } from "./_server/auth/webauthn";
@@ -34,22 +33,13 @@ async function AuthGate() {
   if (!user) return <LoginScreen />;
 
   if (user.role === "admin") {
-    const [users, courses, sites, stats, today] = await Promise.all([
+    const [users, courses, sites] = await Promise.all([
       listUsersForAdmin(),
       listCoursesForAdmin(),
       getCampusSites(),
-      getAttendanceStats(),
-      getUlaanbaatarToday(),
     ]);
     return (
-      <AdminApp
-        user={user}
-        users={users}
-        courses={courses}
-        sites={sites}
-        stats={stats}
-        today={today}
-      />
+      <AdminApp user={user} users={users} courses={courses} sites={sites} />
     );
   }
 

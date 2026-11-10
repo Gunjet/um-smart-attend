@@ -5,25 +5,17 @@ import { useNotice } from "../../_hooks/use-notice";
 import type { AdminUser } from "../../_lib/admin-types";
 import type { AdminCourse } from "../../_lib/dto";
 import type { CampusSite } from "../../_lib/geo";
-import type { StatRow } from "../../_lib/stats";
 import type { SessionUser } from "../../_lib/types";
 import { logout } from "../../_server/auth/actions";
 import { AppShell, type NavItem } from "../app-shell";
-import { BookIcon, ChartIcon, MapPinIcon, UsersIcon } from "../icons";
+import { BookIcon, MapPinIcon, UsersIcon } from "../icons";
 import { AdminPanel } from "./admin-panel";
 import { CampusPanel } from "./campus-panel";
-import { OverviewPanel } from "./overview-panel";
 import { CoursesPanel } from "./courses-panel";
 
-type AdminView = "overview" | "users" | "courses" | "campus";
+type AdminView = "users" | "courses" | "campus";
 
 const ADMIN_NAV: NavItem<AdminView>[] = [
-  {
-    id: "overview",
-    label: "Тойм",
-    shortLabel: "Тойм",
-    icon: <ChartIcon />,
-  },
   {
     id: "users",
     label: "Хэрэглэгчид",
@@ -49,19 +41,14 @@ export function AdminApp({
   users,
   courses,
   sites,
-  stats,
-  today,
 }: {
   user: SessionUser;
   users: AdminUser[];
   courses: AdminCourse[];
   sites: CampusSite[];
-  stats: StatRow[];
-  /** Улаанбаатарын цагаар өнөөдөр, "YYYY-MM-DD". */
-  today: string;
 }) {
   const { notice, notify, dismissNotice } = useNotice();
-  const [view, setView] = useState<AdminView>("overview");
+  const [view, setView] = useState<AdminView>("users");
   const [, startTransition] = useTransition();
 
   return (
@@ -78,9 +65,7 @@ export function AdminApp({
       notice={notice}
       onDismissNotice={dismissNotice}
     >
-      {view === "overview" ? (
-        <OverviewPanel stats={stats} today={today} />
-      ) : view === "courses" ? (
+      {view === "courses" ? (
         <CoursesPanel courses={courses} users={users} notify={notify} />
       ) : view === "campus" ? (
         <CampusPanel sites={sites} notify={notify} />

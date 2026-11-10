@@ -427,14 +427,3 @@ export function CalendarIcon({ className = "size-[18px]" }: IconProps) {
     </svg>
   );
 }
-
-export function ChartIcon({ className = "size-[18px]" }: IconProps) {
-  return (
-    <svg {...base} className={className}>
-      <path
-        d="M4.5 19.5h15M7.5 16v-5M12 16V7.5M16.5 16v-3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
