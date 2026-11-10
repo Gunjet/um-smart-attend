@@ -1,5 +1,5 @@
 import "server-only";
-import { asc } from "drizzle-orm";
+import { asc, sql } from "drizzle-orm";
 import type { AdminUser } from "../../_lib/admin-types";
 import { getAdmin } from "../auth/dal";
 import { getDb, schema } from "../db";
@@ -16,16 +16,16 @@ export async function listUsersForAdmin(): Promise<AdminUser[]> {
       email: schema.users.email,
       studentCode: schema.users.studentCode,
       classGroup: schema.users.classGroup,
-      deviceIdHash: schema.users.deviceIdHash,
+      passkeyRegistered: sql<boolean>`exists (select 1 from passkeys p where p.user_id = "users"."id")`,
       createdAt: schema.users.createdAt,
     })
     .from(schema.users)
     .orderBy(asc(schema.users.fullName));
 
   return rows
-    .map(({ deviceIdHash, createdAt, ...row }) => ({
+    .map(({ passkeyRegistered, createdAt, ...row }) => ({
       ...row,
-      deviceBound: Boolean(deviceIdHash),
+      passkeyRegistered: Boolean(passkeyRegistered),
       createdAt: createdAt.toISOString(),
     }))
     .sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role]);

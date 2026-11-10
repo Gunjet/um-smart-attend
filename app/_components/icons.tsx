@@ -313,3 +313,15 @@ export function MapPinIcon({ className = "size-[18px]" }: IconProps) {
     </svg>
   );
 }
+
+export function FingerprintIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path
+        d="M6.5 18.5c1-2 1.5-4 1.5-6.5a4 4 0 0 1 8 0c0 1.5-.1 3-.4 4.4M12 12c0 3-.6 5.8-2 8.5M16 19.5c.3-.8.6-1.7.8-2.6M4.5 15c.3-1 .5-2 .5-3a7 7 0 0 1 12.6-4.2M19 12c0 .7 0 1.3-.1 2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

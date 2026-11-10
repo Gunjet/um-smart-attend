@@ -33,9 +33,6 @@ export const users = pgTable(
     /** Оюутны анги (хөтөлбөр + курс), жишээ нь "МТ-1". */
     classGroup: text("class_group"),
     passwordHash: text("password_hash").notNull(),
-    /** Оюутны холбогдсон төхөөрөмжийн hash. Анх нэвтрэхэд тохируулагдана. */
-    deviceIdHash: text("device_id_hash"),
-    deviceBoundAt: timestamp("device_bound_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -186,6 +183,45 @@ export const attendanceRecords = pgTable(
     index("attendance_records_student_id_idx").on(table.studentId),
   ],
 );
+
+/**
+ * Оюутны Face ID / хурууны хээний түлхүүр (WebAuthn passkey).
+ * Нууц түлхүүр утсанд үлдэнэ, энд зөвхөн нийтийн түлхүүр хадгалагдана.
+ */
+export const passkeys = pgTable(
+  "passkeys",
+  {
+    /** Credential ID (base64url). */
+    id: text("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** COSE нийтийн түлхүүр (base64url). */
+    publicKey: text("public_key").notNull(),
+    counter: integer("counter").notNull().default(0),
+    transports: text("transports").array(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  },
+  (table) => [index("passkeys_user_id_idx").on(table.userId)],
+);
+
+export const webauthnPurpose = pgEnum("webauthn_purpose", [
+  "register",
+  "checkin",
+]);
+
+/** Нэг удаагийн WebAuthn challenge (хэрэглэгч бүрт нэг идэвхтэй). */
+export const webauthnChallenges = pgTable("webauthn_challenges", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  challenge: text("challenge").notNull(),
+  purpose: webauthnPurpose("purpose").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
 
 /** Сургуулийн байршил (ганц мөр, id = 1). Ирц бүртгэхэд зайг үүнээс тооцно. */
 export const campusLocation = pgTable(

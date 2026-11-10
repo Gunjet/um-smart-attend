@@ -91,10 +91,12 @@ export function StudentApp({
   user,
   courses,
   locationRequired,
+  passkeyRegistered,
 }: {
   user: SessionUser;
   courses: StudentCourse[];
   locationRequired: boolean;
+  passkeyRegistered: boolean;
 }) {
   const { notify, shellProps } = useShell(user, "Оюутны эрх");
   return (
@@ -108,6 +110,7 @@ export function StudentApp({
         firstName={user.firstName}
         courses={courses}
         locationRequired={locationRequired}
+        passkeyRegistered={passkeyRegistered}
         notify={notify}
       />
     </AppShell>

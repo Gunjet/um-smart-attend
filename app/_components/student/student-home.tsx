@@ -4,16 +4,20 @@ import type { StudentCourse } from "../../_lib/dto";
 import type { Notify } from "../../_lib/types";
 import { AttendanceOverview } from "./attendance-overview";
 import { CheckInFlow } from "./check-in-flow";
+import { PasskeySetup } from "./passkey-setup";
 
 export function StudentHome({
   firstName,
   courses,
   locationRequired,
+  passkeyRegistered,
   notify,
 }: {
   firstName: string;
   courses: StudentCourse[];
   locationRequired: boolean;
+  /** Face ID / хурууны хээгээ бүртгүүлсэн эсэх. */
+  passkeyRegistered: boolean;
   notify: Notify;
 }) {
   const openCourses = courses.filter((course) => course.openSessionId);
@@ -46,11 +50,15 @@ export function StudentHome({
         </section>
       ))}
 
-      <CheckInFlow
-        openCourse={awaiting}
-        locationRequired={locationRequired}
-        notify={notify}
-      />
+      {passkeyRegistered ? (
+        <CheckInFlow
+          openCourse={awaiting}
+          locationRequired={locationRequired}
+          notify={notify}
+        />
+      ) : (
+        <PasskeySetup notify={notify} />
+      )}
 
       <AttendanceOverview courses={courses} />
     </div>

@@ -1,19 +1,30 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import {
+  browserSupportsWebAuthn,
+  type PublicKeyCredentialRequestOptionsJSON,
+  startAuthentication,
+} from "@simplewebauthn/browser";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useQrScanner } from "../../_hooks/use-qr-scanner";
 import { LocationError, requestLocation } from "../../_lib/device-location";
 import type { StudentCourse } from "../../_lib/dto";
 import type { Notify } from "../../_lib/types";
+import { describeWebAuthnError } from "../../_lib/webauthn-client";
 import { checkIn } from "../../_server/attendance/actions";
-import { MapPinIcon } from "../icons";
+import { startCheckInPasskey } from "../../_server/auth/passkey-actions";
+import { FingerprintIcon, MapPinIcon } from "../icons";
 import { cx, primaryButtonClass } from "../ui";
 
 const SCANNER_ELEMENT_ID = "student-qr-reader";
 
 /**
  * QR уншуулах эсвэл багшийн дэлгэц дээрх 6 оронтой кодыг оруулж ирц бүртгүүлнэ.
- * Сургуулийн байршил тохируулсан бол утасны байршлыг хамт илгээнэ.
+ * Бүртгүүлэх бүрт Face ID / хурууны хээгээр баталгаажуулна. Сургуулийн
+ * байршил тохируулсан бол утасны байршлыг хамт илгээнэ.
+ *
+ * Safari нь товч дарсны дараа шууд WebAuthn дуудахыг шаарддаг тул
+ * challenge-ийг урьдчилан татаж, QR уншсаны дараа баталгаажуулах товч харуулна.
  */
 export function CheckInFlow({
   openCourse,
@@ -28,12 +39,57 @@ export function CheckInFlow({
 }) {
   const [error, setError] = useState("");
   const [code, setCode] = useState("");
+  /** QR уншигдсан, Face ID-гаар баталгаажуулахыг хүлээж буй утга. */
+  const [scanned, setScanned] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const passkeyOptions = useRef<PublicKeyCredentialRequestOptionsJSON | null>(
+    null,
+  );
+
+  const prepareSeq = useRef(0);
+
+  /** Challenge-ийг татна. Зөвхөн хамгийн сүүлийн хүсэлтийн хариуг хадгална
+   *  (сервер хэрэглэгч бүрт ганц challenge хадгалдаг). */
+  const preparePasskey = useCallback(async () => {
+    const seq = ++prepareSeq.current;
+    passkeyOptions.current = null;
+    const result = await startCheckInPasskey();
+    if (seq === prepareSeq.current) {
+      passkeyOptions.current = result.ok ? result.options : null;
+    }
+  }, []);
+
+  useEffect(() => {
+    void preparePasskey();
+  }, [preparePasskey]);
 
   const submit = useCallback(
     (value: string) =>
       startTransition(async () => {
         setError("");
+        if (!browserSupportsWebAuthn()) {
+          setError(describeWebAuthnError({ name: "NotSupportedError" }));
+          return;
+        }
+        // 1) Face ID — товч дарсан даруйд (await-гүйгээр) дуудна.
+        if (!passkeyOptions.current) await preparePasskey();
+        const optionsJSON = passkeyOptions.current;
+        passkeyOptions.current = null;
+        if (!optionsJSON) {
+          setError("Face ID бэлтгэж чадсангүй. Дахин оролдоно уу.");
+          void preparePasskey();
+          return;
+        }
+        let passkey;
+        try {
+          passkey = await startAuthentication({ optionsJSON });
+        } catch (cause) {
+          setError(describeWebAuthnError(cause));
+          void preparePasskey();
+          return;
+        }
+
+        // 2) Байршил
         let location = null;
         if (locationRequired) {
           try {
@@ -44,18 +100,23 @@ export function CheckInFlow({
                 ? cause.message
                 : "Байршил авч чадсангүй.",
             );
+            void preparePasskey();
             return;
           }
         }
-        const result = await checkIn(value, location);
+
+        // 3) Сервер
+        const result = await checkIn(value, location, passkey);
+        void preparePasskey();
         if (result.ok) {
           setCode("");
+          setScanned(null);
           notify(result.message ?? "Ирц бүртгэгдлээ.");
         } else {
           setError(result.error);
         }
       }),
-    [locationRequired, notify],
+    [locationRequired, notify, preparePasskey],
   );
 
   // Байршлыг урьдчилан авч эхэлбэл бүртгэл хурдан болно.
@@ -65,13 +126,11 @@ export function CheckInFlow({
 
   const scanner = useQrScanner(
     SCANNER_ELEMENT_ID,
-    useCallback(
-      (text: string) => {
-        submit(text);
-        return true; // эхний уншилтын дараа камерыг зогсооно
-      },
-      [submit],
-    ),
+    useCallback((text: string) => {
+      setError("");
+      setScanned(text);
+      return true; // эхний уншилтын дараа камерыг зогсооно
+    }, []),
   );
 
   return (
@@ -104,11 +163,13 @@ export function CheckInFlow({
               ▦
             </span>
             <strong className="text-sm font-medium">
-              {pending
-                ? locationRequired
-                  ? "Байршил шалгаж байна…"
-                  : "Шалгаж байна…"
-                : "Камераа QR код руу чиглүүлнэ үү"}
+              {scanned
+                ? "✓ QR уншигдлаа"
+                : pending
+                  ? locationRequired
+                    ? "Байршил шалгаж байна…"
+                    : "Шалгаж байна…"
+                  : "Камераа QR код руу чиглүүлнэ үү"}
             </strong>
           </div>
         )}
@@ -123,20 +184,43 @@ export function CheckInFlow({
         </p>
       )}
 
-      <button
-        className={cx(primaryButtonClass, "w-full")}
-        disabled={pending}
-        onClick={() => {
-          setError("");
-          if (scanner.isScanning) void scanner.stop();
-          else {
-            prefetchLocation();
-            void scanner.start();
-          }
-        }}
-      >
-        {scanner.isScanning ? "Камер зогсоох" : "▣ Камер нээж QR уншуулах"}
-      </button>
+      {scanned && !scanner.isScanning ? (
+        <div className="space-y-2">
+          <button
+            className={cx(primaryButtonClass, "w-full")}
+            disabled={pending}
+            onClick={() => submit(scanned)}
+          >
+            <FingerprintIcon className="size-5" />
+            {pending ? "Шалгаж байна…" : "Face ID-гаар баталгаажуулах"}
+          </button>
+          <button
+            className="w-full rounded-lg py-2 text-sm font-medium text-slate-500 hover:text-slate-800"
+            disabled={pending}
+            onClick={() => {
+              setScanned(null);
+              setError("");
+            }}
+          >
+            Дахин уншуулах
+          </button>
+        </div>
+      ) : (
+        <button
+          className={cx(primaryButtonClass, "w-full")}
+          disabled={pending}
+          onClick={() => {
+            setError("");
+            if (scanner.isScanning) void scanner.stop();
+            else {
+              prefetchLocation();
+              void scanner.start();
+            }
+          }}
+        >
+          {scanner.isScanning ? "Камер зогсоох" : "▣ Камер нээж QR уншуулах"}
+        </button>
+      )}
 
       <form
         className="mt-4 border-t border-slate-100 pt-4"

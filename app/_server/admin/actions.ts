@@ -270,9 +270,10 @@ export async function resetPassword(
   };
 }
 
-/* --------------------------- Төхөөрөмж чөлөөлөх ---------------------------- */
+/* ----------------------------- Face ID шинэчлэх ----------------------------- */
 
-export async function releaseDevice(
+/** Оюутны Face ID-г устгана. Дараа нь шинэ утсандаа дахин бүртгүүлнэ. */
+export async function resetPasskey(
   _previous: AdminActionState,
   formData: FormData,
 ): Promise<AdminActionState> {
@@ -280,20 +281,18 @@ export async function releaseDevice(
   const id = field(formData, "id");
   try {
     const db = getDb();
+    await db.delete(schema.passkeys).where(eq(schema.passkeys.userId, id));
     await db
-      .update(schema.users)
-      .set({ deviceIdHash: null, deviceBoundAt: null, updatedAt: new Date() })
-      .where(eq(schema.users.id, id));
-    await db.delete(schema.sessions).where(eq(schema.sessions.userId, id));
+      .delete(schema.webauthnChallenges)
+      .where(eq(schema.webauthnChallenges.userId, id));
   } catch (error) {
-    console.error("releaseDevice failed", error);
+    console.error("resetPasskey failed", error);
     return SERVER_ERROR;
   }
   refresh();
   return {
     ok: true,
-    message:
-      "Төхөөрөмж чөлөөлөгдлөө. Оюутан шинэ төхөөрөмжөөсөө нэвтэрч болно.",
+    message: "Face ID устгагдлаа. Оюутан дараагийн удаа шинээр бүртгүүлнэ.",
   };
 }
 

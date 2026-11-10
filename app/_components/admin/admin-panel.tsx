@@ -7,7 +7,7 @@ import { Dialog } from "../dialog";
 import {
   KeyIcon,
   PencilIcon,
-  PhoneIcon,
+  FingerprintIcon,
   PlusIcon,
   TrashIcon,
   UploadIcon,
@@ -46,7 +46,7 @@ const DIALOG_TITLE: Record<DialogState["kind"], string> = {
   import: "Оюутнуудыг CSV-ээр оруулах",
   edit: "Мэдээлэл засах",
   password: "Нууц үг шинэчлэх",
-  device: "Төхөөрөмж чөлөөлөх",
+  device: "Face ID устгах",
   delete: "Хэрэглэгч устгах",
 };
 
@@ -198,12 +198,16 @@ export function AdminPanel({
                   {user.role === "student" ? (
                     <span
                       className={
-                        user.deviceBound ? "text-emerald-700" : "text-slate-400"
+                        user.passkeyRegistered
+                          ? "text-emerald-700"
+                          : "text-slate-400"
                       }
-                      title="Төхөөрөмж"
+                      title="Face ID / хурууны хээ"
                     >
-                      <PhoneIcon className="mr-1 inline size-3.5 align-[-2px]" />
-                      {user.deviceBound ? "Холбогдсон" : "Холбогдоогүй"}
+                      <FingerprintIcon className="mr-1 inline size-3.5 align-[-2px]" />
+                      {user.passkeyRegistered
+                        ? "Face ID бүртгэсэн"
+                        : "Face ID бүртгээгүй"}
                     </span>
                   ) : (
                     <span className="text-slate-400">
@@ -254,7 +258,7 @@ export function AdminPanel({
                   scope="col"
                   className="border-b border-slate-100 px-3 py-3 font-medium"
                 >
-                  Төхөөрөмж
+                  Face ID
                 </th>
                 <th
                   scope="col"
@@ -303,10 +307,10 @@ export function AdminPanel({
                     <td className="border-b border-slate-100 px-3 py-3 text-sm">
                       {user.role !== "student" ? (
                         <span className="text-slate-300">—</span>
-                      ) : user.deviceBound ? (
-                        <span className="text-emerald-700">Холбогдсон</span>
+                      ) : user.passkeyRegistered ? (
+                        <span className="text-emerald-700">Бүртгэсэн</span>
                       ) : (
-                        <span className="text-slate-400">Холбогдоогүй</span>
+                        <span className="text-slate-400">Бүртгээгүй</span>
                       )}
                     </td>
                     <td className="border-b border-slate-100 px-3 py-3 text-sm tabular-nums text-slate-500">
@@ -408,10 +412,10 @@ function UserActions({
         onClick={() => onAction({ kind: "password", user })}
       />
       <RowAction
-        label="Төхөөрөмж чөлөөлөх"
+        label="Face ID устгах"
         hidden={user.role !== "student"}
-        icon={<PhoneIcon className="size-4" />}
-        disabled={!user.deviceBound}
+        icon={<FingerprintIcon className="size-4" />}
+        disabled={!user.passkeyRegistered}
         onClick={() => onAction({ kind: "device", user })}
       />
       <RowAction

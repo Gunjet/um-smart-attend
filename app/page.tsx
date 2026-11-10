@@ -4,6 +4,7 @@ import { StudentApp, TeacherApp } from "./_components/attendance-app";
 import { LoginScreen } from "./_components/login-screen";
 import { listUsersForAdmin } from "./_server/admin/users";
 import { getCurrentUser } from "./_server/auth/dal";
+import { hasPasskey } from "./_server/auth/webauthn";
 import { getCampusLocation } from "./_server/settings/campus";
 import {
   getStudentCourses,
@@ -44,15 +45,17 @@ async function AuthGate() {
     return <TeacherApp user={user} courses={courses} records={records} />;
   }
 
-  const [courses, campus] = await Promise.all([
+  const [courses, campus, passkeyRegistered] = await Promise.all([
     getStudentCourses(user.id),
     getCampusLocation(),
+    hasPasskey(user.id),
   ]);
   return (
     <StudentApp
       user={user}
       courses={courses}
       locationRequired={campus !== null}
+      passkeyRegistered={passkeyRegistered}
     />
   );
 }

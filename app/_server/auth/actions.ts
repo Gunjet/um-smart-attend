@@ -6,7 +6,6 @@ import { redirect } from "next/navigation";
 import * as z from "zod";
 import { detectInAppBrowser } from "../../_lib/in-app-browser";
 import { getDb, schema } from "../db";
-import { getDeviceIdHash } from "./device";
 import { verifyPasswordOrDummy } from "./password";
 import { createSession, deleteSession } from "./session";
 
@@ -81,26 +80,12 @@ async function authenticate({
   const passwordOk = await verifyPasswordOrDummy(password, user?.passwordHash);
   if (!user || !passwordOk) return INVALID_CREDENTIALS;
 
-  // Оюутан зөвхөн анх нэвтэрсэн төхөөрөмжөөсөө нэвтэрнэ.
+  // Ирцийг Face ID-гаар баталгаажуулдаг тул апп доторх хөтөч (passkey
+  // дэмждэггүй) -өөс оюутныг нэвтрүүлэхгүй.
   if (user.role === "student") {
-    // Апп доторх хөтөч cookie-г мартдаг тул бүртгэлийг тэнд холбохгүй.
     const app = detectInAppBrowser((await headers()).get("user-agent") ?? "");
     if (app) {
       return `${app} доторх хөтчөөс нэвтрэх боломжгүй. Линкийг Safari эсвэл Chrome-оор нээнэ үү.`;
-    }
-    const deviceHash = await getDeviceIdHash();
-    if (user.deviceIdHash && user.deviceIdHash !== deviceHash) {
-      return "Энэ бүртгэл өөр төхөөрөмжид холбогдсон байна. Утсаа сольсон бол багш эсвэл админд хандана уу.";
-    }
-    if (!user.deviceIdHash) {
-      await db
-        .update(schema.users)
-        .set({
-          deviceIdHash: deviceHash,
-          deviceBoundAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(schema.users.id, user.id));
     }
   }
 

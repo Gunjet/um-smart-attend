@@ -14,7 +14,7 @@ import {
   createUser,
   deleteUser,
   importStudents,
-  releaseDevice,
+  resetPasskey,
   resetPassword,
   updateUser,
 } from "../../_server/admin/actions";
@@ -422,7 +422,7 @@ export function ConfirmForm({
   onDone: (message: string) => void;
 }) {
   const [state, onSubmit, pending] = useAdminAction(
-    kind === "delete" ? deleteUser : releaseDevice,
+    kind === "delete" ? deleteUser : resetPasskey,
     onDone,
   );
   return (
@@ -436,15 +436,15 @@ export function ConfirmForm({
           </>
         ) : (
           <>
-            <strong>{user.name}</strong>-ийн холбогдсон төхөөрөмжийг чөлөөлөх
-            үү? Дараа нь анх нэвтэрсэн төхөөрөмжид нь шинээр холбогдоно.
+            <strong>{user.name}</strong>-ийн Face ID-г устгах уу? Оюутан
+            дараагийн удаа нэвтрэхдээ шинэ утсандаа дахин бүртгүүлнэ.
           </>
         )}
       </p>
       <FormError message={state?.error} />
       <FormActions
         onCancel={onCancel}
-        submitLabel={kind === "delete" ? "Устгах" : "Чөлөөлөх"}
+        submitLabel={kind === "delete" ? "Устгах" : "Face ID устгах"}
         pending={pending}
         danger={kind === "delete"}
       />

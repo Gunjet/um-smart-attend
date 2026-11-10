@@ -11,7 +11,9 @@ import {
   formatDistance,
   MAX_ACCURACY_TOLERANCE_M,
 } from "../../_lib/geo";
+import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { getCurrentUser } from "../auth/dal";
+import { verifyCheckInPasskey } from "../auth/webauthn";
 import {
   findTeacherSession,
   getSessionRoster,
@@ -200,12 +202,14 @@ const LOCATION_REQUIRED =
 
 /**
  * QR кодын текст эсвэл 6 оронтой кодоор ирц бүртгүүлнэ.
+ * Face ID / хурууны хээгээр баталгаажуулах шаардлагатай.
  * Сургуулийн байршил тохируулсан бол оюутны байршлыг шалгаж,
  * радиусаас гадна байвал бүртгээд багшид анхааруулга харуулна.
  */
 export async function checkIn(
   input: string,
-  location: DeviceLocation | null = null,
+  location: DeviceLocation | null,
+  passkey: AuthenticationResponseJSON | null,
 ): Promise<ActionResult> {
   const student = await requireRole("student");
   if (!student) return { ok: false, error: "Ирцийг зөвхөн оюутан бүртгүүлнэ." };
@@ -215,6 +219,10 @@ export async function checkIn(
   const db = getDb();
 
   try {
+    // Оюутан өөрийн утсаараа, өөрийн царай/хурууны хээгээр бүртгүүлж буйг шалгана.
+    const passkeyError = await verifyCheckInPasskey(student.id, passkey);
+    if (passkeyError) return { ok: false, error: passkeyError };
+
     const campus = await getCampusLocation();
     let distanceM: number | null = null;
     let locationOk: boolean | null = null;
