@@ -15,6 +15,7 @@ export async function listUsersForAdmin(): Promise<AdminUser[]> {
       name: schema.users.fullName,
       email: schema.users.email,
       studentCode: schema.users.studentCode,
+      classGroup: schema.users.classGroup,
       deviceIdHash: schema.users.deviceIdHash,
       createdAt: schema.users.createdAt,
     })

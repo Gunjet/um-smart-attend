@@ -2,18 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { useNotice } from "../_hooks/use-notice";
+import type { StudentCourse, TeacherCourse } from "../_lib/dto";
+import type { AttendanceRecord, SessionUser } from "../_lib/types";
 import { logout } from "../_server/auth/actions";
-import { COURSES } from "../_lib/demo-data";
-import type { SessionUser } from "../_lib/types";
 import { AppShell, type NavItem } from "./app-shell";
-import { useAttendanceContext } from "./attendance-provider";
 import { CheckCircleIcon, DashboardIcon, ReportIcon } from "./icons";
 import { StudentHome } from "./student/student-home";
 import { TeacherDashboard } from "./teacher/teacher-dashboard";
 import { TeacherReport } from "./teacher/teacher-report";
 
 type TeacherView = "dashboard" | "report";
-type StudentView = "attendance";
 
 const TEACHER_NAV: NavItem<TeacherView>[] = [
   {
@@ -30,7 +28,7 @@ const TEACHER_NAV: NavItem<TeacherView>[] = [
   },
 ];
 
-const STUDENT_NAV: NavItem<StudentView>[] = [
+const STUDENT_NAV: NavItem<"attendance">[] = [
   {
     id: "attendance",
     label: "Миний ирц",
@@ -39,78 +37,76 @@ const STUDENT_NAV: NavItem<StudentView>[] = [
   },
 ];
 
-const ROLE_LABEL: Record<SessionUser["role"], string> = {
-  admin: "Админы эрх",
-  teacher: "Багшийн эрх",
-  student: "Оюутны эрх",
-};
-
-/** Нэвтэрсэн хэрэглэгчийн эрхээс хамааран багш эсвэл оюутны дэлгэцийг харуулна. */
-export function AttendanceApp({ user }: { user: SessionUser }) {
-  const attendance = useAttendanceContext();
-  const [teacherView, setTeacherView] = useState<TeacherView>("dashboard");
-  const { notice, notify: setNotice, dismissNotice } = useNotice();
+function useShell(user: SessionUser, roleLabel: string) {
+  const { notice, notify, dismissNotice } = useNotice();
   const [, startTransition] = useTransition();
-
-  const shellProps = {
-    account: {
-      name: user.name,
-      roleLabel: ROLE_LABEL[user.role],
-      initials: user.initials,
+  return {
+    notify,
+    shellProps: {
+      account: { name: user.name, roleLabel, initials: user.initials },
+      onSignOut: () => startTransition(() => logout()),
+      notice,
+      onDismissNotice: dismissNotice,
     },
-    onSignOut: () => startTransition(() => logout()),
-    notice,
-    onDismissNotice: dismissNotice,
   };
+}
 
-  if (user.role === "student") {
-    return (
-      <AppShell
-        {...shellProps}
-        navItems={STUDENT_NAV}
-        activeView="attendance"
-        onNavigate={() => undefined}
-      >
-        <StudentHome
-          attendance={attendance}
-          student={{
-            code: user.studentCode ?? "",
-            name: user.name,
-            firstName: user.firstName,
-            initials: user.initials,
-          }}
-          notify={setNotice}
-        />
-      </AppShell>
-    );
-  }
-
-  const navigate = (view: TeacherView) => {
-    // Тайланд demo түүх хэрэгтэй (ирц өгөгдлийн санд шилжих хүртэл).
-    if (view === "report") attendance.loadHistory();
-    setTeacherView(view);
-  };
+export function TeacherApp({
+  user,
+  courses,
+  records,
+}: {
+  user: SessionUser;
+  courses: TeacherCourse[];
+  records: AttendanceRecord[];
+}) {
+  const { notify, shellProps } = useShell(user, "Багшийн эрх");
+  const [view, setView] = useState<TeacherView>("dashboard");
 
   return (
     <AppShell
       {...shellProps}
       navItems={TEACHER_NAV}
-      activeView={teacherView}
-      onNavigate={navigate}
+      activeView={view}
+      onNavigate={setView}
     >
-      {teacherView === "report" ? (
+      {view === "report" ? (
         <TeacherReport
-          records={attendance.records}
-          courses={COURSES}
-          onBack={() => setTeacherView("dashboard")}
+          records={records}
+          courses={courses}
+          onBack={() => setView("dashboard")}
         />
       ) : (
         <TeacherDashboard
-          attendance={attendance}
+          courses={courses}
           teacherFirstName={user.firstName}
-          notify={setNotice}
+          notify={notify}
         />
       )}
+    </AppShell>
+  );
+}
+
+export function StudentApp({
+  user,
+  courses,
+}: {
+  user: SessionUser;
+  courses: StudentCourse[];
+}) {
+  const { notify, shellProps } = useShell(user, "Оюутны эрх");
+  return (
+    <AppShell
+      {...shellProps}
+      navItems={STUDENT_NAV}
+      activeView="attendance"
+      onNavigate={() => undefined}
+    >
+      <StudentHome
+        firstName={user.firstName}
+        courses={courses}
+        notify={notify}
+      />
     </AppShell>
   );
 }

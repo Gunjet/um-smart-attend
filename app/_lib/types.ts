@@ -25,7 +25,7 @@ export type Student = {
 export type Course = {
   title: string;
   code: string;
-  room: string;
+  classGroups: string[];
   /** "09:00 — 10:30" хэлбэртэй. */
   time: string;
   /** Хичээлд бүртгэлтэй оюутны тоо. */
@@ -39,12 +39,6 @@ export type AttendanceRecord = {
   courseCode: string;
   courseTitle: string;
   students: Student[];
-};
-
-export type AttendanceSession = {
-  id: string;
-  courseIndex: number;
-  startedAt: number;
 };
 
 export type Notify = (message: string) => void;

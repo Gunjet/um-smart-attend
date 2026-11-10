@@ -21,3 +21,5 @@ export const STATUS_PILL_CLASS: Record<AttendanceStatus, string> = {
   Тасалсан: "bg-rose-50 text-rose-800",
   "Хүлээгдэж байна": "bg-slate-100 text-slate-600",
 };
+
+export const ACADEMIC_YEAR = "2025–2026 ОНЫ ХИЧЭЭЛИЙН ЖИЛ";

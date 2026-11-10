@@ -1,7 +1,14 @@
 "use client";
 
-import { useActionState, useState, type ReactNode } from "react";
+import {
+  startTransition,
+  useActionState,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import type { AdminActionState, AdminUser } from "../../_lib/admin-types";
+import { COURSE_YEARS, PROGRAMS } from "../../_lib/programs";
 import type { UserRole } from "../../_lib/types";
 import {
   createUser,
@@ -14,7 +21,7 @@ import {
 import { CopyIcon } from "../icons";
 import { cx, primaryButtonClass } from "../ui";
 
-type Action = (
+export type Action = (
   previous: AdminActionState,
   formData: FormData,
 ) => Promise<AdminActionState>;
@@ -25,7 +32,7 @@ export const ROLE_LABEL: Record<UserRole, string> = {
   student: "Оюутан",
 };
 
-const inputClass =
+export const inputClass =
   "w-full rounded-lg border border-slate-300 bg-surface px-3.5 py-2.5 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100";
 
 const secondaryClass =
@@ -34,9 +41,15 @@ const secondaryClass =
 /**
  * Server action-ийг дуудаж, амжилттай бол (шинэ нууц үг харуулах шаардлагагүй үед)
  * цонхыг хааж мэдэгдэл гаргана.
+ *
+ * `<form action>` нь илгээсний дараа талбаруудыг автоматаар цэвэрлэдэг тул
+ * алдаа гарахад бичсэн утгууд арилдаг. Үүнээс сэргийлж `onSubmit`-ээр дуудна.
  */
-function useAdminAction(action: Action, onDone: (message: string) => void) {
-  return useActionState<AdminActionState, FormData>(
+export function useAdminAction(
+  action: Action,
+  onDone: (message: string) => void,
+) {
+  const [state, dispatch, pending] = useActionState<AdminActionState, FormData>(
     async (previous, formData) => {
       const result = await action(previous, formData);
       if (result?.ok && !result.generatedPassword) onDone(result.message ?? "");
@@ -44,11 +57,20 @@ function useAdminAction(action: Action, onDone: (message: string) => void) {
     },
     null,
   );
+
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const formData = new FormData(event.currentTarget, submitter);
+    startTransition(() => dispatch(formData));
+  };
+
+  return [state, onSubmit, pending] as const;
 }
 
 /* -------------------------------- Хэсгүүд -------------------------------- */
 
-function Field({
+export function Field({
   label,
   htmlFor,
   error,
@@ -79,7 +101,7 @@ function Field({
   );
 }
 
-function FormError({ message }: { message?: string }) {
+export function FormError({ message }: { message?: string }) {
   if (!message) return null;
   return (
     <p
@@ -91,7 +113,7 @@ function FormError({ message }: { message?: string }) {
   );
 }
 
-function FormActions({
+export function FormActions({
   onCancel,
   submitLabel,
   pending,
@@ -184,7 +206,7 @@ export function UserForm({
   onCancel: () => void;
   onDone: (message: string) => void;
 }) {
-  const [state, formAction, pending] = useAdminAction(
+  const [state, onSubmit, pending] = useAdminAction(
     user ? updateUser : createUser,
     onDone,
   );
@@ -202,7 +224,7 @@ export function UserForm({
   }
 
   return (
-    <form action={formAction} className="space-y-4" noValidate>
+    <form onSubmit={onSubmit} className="space-y-4" noValidate>
       {user ? (
         <input type="hidden" name="id" value={user.id} />
       ) : (
@@ -267,6 +289,19 @@ export function UserForm({
         />
       </Field>
 
+      {isStudent && (
+        <Field
+          label="Анги"
+          htmlFor="user-classGroup"
+          error={state?.fieldErrors?.classGroup}
+        >
+          <ClassGroupSelect
+            id="user-classGroup"
+            defaultValue={user?.classGroup ?? ""}
+          />
+        </Field>
+      )}
+
       {!user && (
         <Field
           label="Нууц үг"
@@ -294,6 +329,35 @@ export function UserForm({
   );
 }
 
+/** Хөтөлбөрөөр бүлэглэсэн 16 анги (МТ-1 … ГТИ-4). */
+export function ClassGroupSelect({
+  id,
+  defaultValue,
+}: {
+  id: string;
+  defaultValue: string;
+}) {
+  return (
+    <select
+      id={id}
+      name="classGroup"
+      className={inputClass}
+      defaultValue={defaultValue}
+    >
+      <option value="">— Сонгоогүй —</option>
+      {PROGRAMS.map((program) => (
+        <optgroup key={program.code} label={program.name}>
+          {COURSE_YEARS.map((year) => (
+            <option key={year} value={`${program.code}-${year}`}>
+              {`${program.code}-${year} · ${year}-р курс`}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
+
 /* ------------------------------ Нууц үг шинэчлэх ----------------------------- */
 
 export function ResetPasswordForm({
@@ -305,7 +369,7 @@ export function ResetPasswordForm({
   onCancel: () => void;
   onDone: (message: string) => void;
 }) {
-  const [state, formAction, pending] = useAdminAction(resetPassword, onDone);
+  const [state, onSubmit, pending] = useAdminAction(resetPassword, onDone);
 
   if (state?.generatedPassword) {
     return (
@@ -318,7 +382,7 @@ export function ResetPasswordForm({
   }
 
   return (
-    <form action={formAction} className="space-y-4" noValidate>
+    <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <input type="hidden" name="id" value={user.id} />
       <Field
         label="Шинэ нууц үг"
@@ -357,12 +421,12 @@ export function ConfirmForm({
   onCancel: () => void;
   onDone: (message: string) => void;
 }) {
-  const [state, formAction, pending] = useAdminAction(
+  const [state, onSubmit, pending] = useAdminAction(
     kind === "delete" ? deleteUser : releaseDevice,
     onDone,
   );
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4">
       <input type="hidden" name="id" value={user.id} />
       <p className="text-[15px] text-slate-700">
         {kind === "delete" ? (
@@ -397,11 +461,11 @@ export function ImportForm({
   onCancel: () => void;
   onDone: (message: string) => void;
 }) {
-  const [state, formAction, pending] = useAdminAction(importStudents, onDone);
+  const [state, onSubmit, pending] = useAdminAction(importStudents, onDone);
   const [csv, setCsv] = useState("");
 
   return (
-    <form action={formAction} className="space-y-4" noValidate>
+    <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <Field
         label="Оюутны жагсаалт"
         htmlFor="import-csv"

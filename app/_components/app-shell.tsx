@@ -47,7 +47,7 @@ export function AppShell<T extends string>({
   const activeItem = navItems.find((item) => item.id === activeView);
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-800">
+    <main className="min-h-screen min-w-0 bg-slate-50 text-slate-800">
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-slate-200 bg-surface p-5 md:flex">
         <a
           className="mb-10 inline-flex items-center gap-3 px-2"

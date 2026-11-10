@@ -6,8 +6,10 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import * as z from "zod";
 import type { AdminActionState } from "../../_lib/admin-types";
+import { CLASS_GROUPS } from "../../_lib/programs";
 import { getCurrentUser } from "../auth/dal";
 import { hashPassword } from "../auth/password";
+import { syncStudentGroup } from "../courses/enrollment-sync";
 import { getDb, schema } from "../db";
 
 /** Нууц үгийн хамгийн бага урт. */
@@ -72,12 +74,20 @@ function isUniqueViolation(error: unknown) {
 const field = (formData: FormData, name: string) =>
   String(formData.get(name) ?? "");
 
+/** "" → null (анги сонгоогүй). */
+const classGroupSchema = z
+  .union([z.literal(""), z.enum(CLASS_GROUPS as [string, ...string[]])], {
+    error: "Анги буруу байна.",
+  })
+  .transform((value) => value || null);
+
 /* ----------------------------- Хэрэглэгч нэмэх ----------------------------- */
 
 const CreateSchema = z.object({
   role: z.enum(["admin", "teacher", "student"]),
   fullName: fullNameSchema,
   identifier: z.string(),
+  classGroup: classGroupSchema,
   password: optionalPasswordSchema,
 });
 
@@ -91,11 +101,12 @@ export async function createUser(
     role: field(formData, "role"),
     fullName: field(formData, "fullName"),
     identifier: field(formData, "identifier"),
+    classGroup: field(formData, "classGroup"),
     password: field(formData, "password"),
   });
   if (!parsed.success) return fieldErrorsOf(parsed.error);
 
-  const { role, fullName, password } = parsed.data;
+  const { role, fullName, classGroup, password } = parsed.data;
   const identifier = (
     role === "student" ? studentCodeSchema : emailSchema
   ).safeParse(parsed.data.identifier);
@@ -105,15 +116,24 @@ export async function createUser(
 
   const finalPassword = password || generatePassword();
   try {
-    await getDb()
-      .insert(schema.users)
-      .values({
-        role,
-        fullName,
-        email: role === "student" ? null : identifier.data,
-        studentCode: role === "student" ? identifier.data : null,
-        passwordHash: await hashPassword(finalPassword),
-      });
+    const passwordHash = await hashPassword(finalPassword);
+    await getDb().transaction(async (tx) => {
+      const [created] = await tx
+        .insert(schema.users)
+        .values({
+          role,
+          fullName,
+          email: role === "student" ? null : identifier.data,
+          studentCode: role === "student" ? identifier.data : null,
+          classGroup: role === "student" ? classGroup : null,
+          passwordHash,
+        })
+        .returning({ id: schema.users.id });
+      // Ангийн хичээлүүдэд автоматаар бүртгэнэ.
+      if (role === "student") {
+        await syncStudentGroup(tx, created.id, null, classGroup);
+      }
+    });
   } catch (error) {
     if (isUniqueViolation(error)) {
       return {
@@ -150,11 +170,17 @@ export async function updateUser(
   if (!fullName.success) {
     return { fieldErrors: { fullName: fullName.error.issues[0]?.message } };
   }
+  const classGroup = classGroupSchema.safeParse(field(formData, "classGroup"));
+  if (!classGroup.success) {
+    return {
+      fieldErrors: { classGroup: classGroup.error.issues[0]?.message },
+    };
+  }
 
   try {
     const db = getDb();
     const [user] = await db
-      .select({ role: schema.users.role })
+      .select({ role: schema.users.role, classGroup: schema.users.classGroup })
       .from(schema.users)
       .where(eq(schema.users.id, id))
       .limit(1);
@@ -169,16 +195,22 @@ export async function updateUser(
       };
     }
 
-    await db
-      .update(schema.users)
-      .set({
-        fullName: fullName.data,
-        ...(user.role === "student"
-          ? { studentCode: identifier.data }
-          : { email: identifier.data }),
-        updatedAt: new Date(),
-      })
-      .where(eq(schema.users.id, id));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(schema.users)
+        .set({
+          fullName: fullName.data,
+          ...(user.role === "student"
+            ? { studentCode: identifier.data, classGroup: classGroup.data }
+            : { email: identifier.data }),
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.users.id, id));
+      // Анги солигдвол хичээлийн бүртгэл дагаж өөрчлөгдөнө.
+      if (user.role === "student") {
+        await syncStudentGroup(tx, id, user.classGroup, classGroup.data);
+      }
+    });
   } catch (error) {
     if (isUniqueViolation(error)) {
       return {
@@ -387,6 +419,7 @@ function fieldErrorsOf(error: z.ZodError): AdminActionState {
     fieldErrors: {
       fullName: fields.fullName?.[0],
       identifier: fields.identifier?.[0],
+      classGroup: fields.classGroup?.[0],
       password: fields.password?.[0],
     },
   };

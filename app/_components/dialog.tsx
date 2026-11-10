@@ -38,7 +38,7 @@ export function Dialog({
         if (event.target === ref.current) onClose();
       }}
       aria-labelledby="dialog-title"
-      className="m-auto w-[min(92vw,30rem)] rounded-2xl border border-slate-200 bg-surface p-0 text-slate-800 shadow-xl backdrop:bg-black/50"
+      className="m-auto max-h-[90dvh] w-[min(92vw,30rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-surface p-0 text-slate-800 shadow-xl backdrop:bg-black/50"
     >
       <div className="p-6">
         <div className="mb-5 flex items-start justify-between gap-4">

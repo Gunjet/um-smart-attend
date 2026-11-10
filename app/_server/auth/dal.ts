@@ -2,15 +2,8 @@ import "server-only";
 import { cache } from "react";
 import type { SessionUser } from "../../_lib/types";
 import type { UserRow } from "../db/schema";
+import { nameParts } from "../../_lib/names";
 import { readSessionUser } from "./session";
-
-/** "Б. Энхжин" → { firstName: "Энхжин", initials: "ЭБ" } */
-function nameParts(fullName: string) {
-  const [surname = "", ...rest] = fullName.split(/\.\s*|\s+/).filter(Boolean);
-  const firstName = rest.join(" ") || surname;
-  const initials = `${firstName.charAt(0)}${rest.length ? surname.charAt(0) : ""}`;
-  return { firstName, initials: initials.toUpperCase() };
-}
 
 /** Клиент рүү дамжуулахад аюулгүй, нарийсгасан хэрэглэгчийн мэдээлэл (DTO). */
 export function toSessionUser(user: UserRow): SessionUser {

@@ -87,7 +87,7 @@ export function AdminPanel({
     (user) =>
       (filter === "all" || user.role === filter) &&
       (!query ||
-        [user.name, user.email, user.studentCode]
+        [user.name, user.email, user.studentCode, user.classGroup]
           .filter(Boolean)
           .some((value) => value!.toLowerCase().includes(query))),
   );
@@ -103,20 +103,25 @@ export function AdminPanel({
             Багш, оюутны бүртгэл удирдах
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
           <button
-            className={cx(secondaryButtonClass, "flex items-center gap-2")}
+            className={cx(
+              secondaryButtonClass,
+              "flex items-center justify-center gap-2",
+            )}
             onClick={() => open({ kind: "import" })}
           >
             <UploadIcon className="size-4" />
-            CSV-ээр оруулах
+            <span className="sm:hidden">CSV оруулах</span>
+            <span className="hidden sm:inline">CSV-ээр оруулах</span>
           </button>
           <button
             className={primaryButtonClass}
             onClick={() => open({ kind: "create" })}
           >
             <PlusIcon className="size-4" />
-            Хэрэглэгч нэмэх
+            <span className="sm:hidden">Нэмэх</span>
+            <span className="hidden sm:inline">Хэрэглэгч нэмэх</span>
           </button>
         </div>
       </div>
@@ -124,7 +129,7 @@ export function AdminPanel({
       <section className="rounded-xl border border-slate-200 bg-surface">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4">
           <div
-            className="flex flex-wrap gap-1.5"
+            className="-mx-1 flex w-full gap-1 overflow-x-auto px-1 sm:w-auto"
             role="tablist"
             aria-label="Эрхээр шүүх"
           >
@@ -135,7 +140,7 @@ export function AdminPanel({
                 aria-selected={filter === item.id}
                 onClick={() => setFilter(item.id)}
                 className={cx(
-                  "rounded-lg px-3 py-1.5 text-sm font-medium transition",
+                  "shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition",
                   filter === item.id
                     ? "bg-emerald-50 text-emerald-800"
                     : "text-slate-500 hover:bg-slate-50 hover:text-slate-800",
@@ -148,12 +153,12 @@ export function AdminPanel({
               </button>
             ))}
           </div>
-          <label className="flex items-center gap-2 rounded-lg border border-slate-200 px-3">
+          <label className="flex w-full items-center gap-2 rounded-lg border border-slate-200 px-3 sm:w-auto">
             <span className="text-slate-400" aria-hidden="true">
               ⌕
             </span>
             <input
-              className="w-56 bg-transparent py-2 text-[15px] outline-none placeholder:text-slate-400"
+              className="w-full bg-transparent py-2 sm:w-56 text-[15px] outline-none placeholder:text-slate-400"
               aria-label="Хэрэглэгч хайх"
               placeholder="Нэр, имэйл, код"
               value={search}
@@ -162,7 +167,62 @@ export function AdminPanel({
           </label>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Гар утсан дээр: карт жагсаалт */}
+        <ul className="divide-y divide-slate-100 md:hidden">
+          {visible.map((user) => (
+            <li key={user.id} className="px-4 py-3.5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-slate-900">
+                    {user.name}
+                    {user.id === currentUserId && (
+                      <span className="ml-1.5 text-[13px] font-normal text-slate-400">
+                        (та)
+                      </span>
+                    )}
+                  </p>
+                  <p className="mt-0.5 truncate font-mono text-sm text-slate-500">
+                    {user.studentCode ?? user.email}
+                    {user.classGroup && (
+                      <span className="font-sans text-slate-700">
+                        {" "}
+                        · {user.classGroup}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <RolePill role={user.role} />
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <span className="flex items-center gap-1.5 whitespace-nowrap text-[13px]">
+                  {user.role === "student" ? (
+                    <span
+                      className={
+                        user.deviceBound ? "text-emerald-700" : "text-slate-400"
+                      }
+                      title="Төхөөрөмж"
+                    >
+                      <PhoneIcon className="mr-1 inline size-3.5 align-[-2px]" />
+                      {user.deviceBound ? "Холбогдсон" : "Холбогдоогүй"}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">
+                      {user.createdAt.slice(0, 10).replaceAll("-", ".")}
+                    </span>
+                  )}
+                </span>
+                <UserActions
+                  user={user}
+                  isSelf={user.id === currentUserId}
+                  onAction={open}
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        {/* Том дэлгэцэн дээр: хүснэгт */}
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[720px] border-separate border-spacing-0 text-[15px]">
             <thead>
               <tr className="text-left text-sm text-slate-500">
@@ -183,6 +243,12 @@ export function AdminPanel({
                   className="border-b border-slate-100 px-3 py-3 font-medium"
                 >
                   Нэвтрэх нэр
+                </th>
+                <th
+                  scope="col"
+                  className="border-b border-slate-100 px-3 py-3 font-medium"
+                >
+                  Анги
                 </th>
                 <th
                   scope="col"
@@ -220,17 +286,19 @@ export function AdminPanel({
                       )}
                     </td>
                     <td className="border-b border-slate-100 px-3 py-3">
-                      <span
-                        className={cx(
-                          "rounded-md px-2 py-0.5 text-[13px] font-medium",
-                          ROLE_PILL[user.role],
-                        )}
-                      >
-                        {ROLE_LABEL[user.role]}
-                      </span>
+                      <RolePill role={user.role} />
                     </td>
                     <td className="border-b border-slate-100 px-3 py-3 font-mono text-sm text-slate-600">
                       {user.studentCode ?? user.email}
+                    </td>
+                    <td className="border-b border-slate-100 px-3 py-3 text-sm whitespace-nowrap">
+                      {user.role !== "student" ? (
+                        <span className="text-slate-300">—</span>
+                      ) : (
+                        (user.classGroup ?? (
+                          <span className="text-amber-700">Сонгоогүй</span>
+                        ))
+                      )}
                     </td>
                     <td className="border-b border-slate-100 px-3 py-3 text-sm">
                       {user.role !== "student" ? (
@@ -245,44 +313,23 @@ export function AdminPanel({
                       {user.createdAt.slice(0, 10).replaceAll("-", ".")}
                     </td>
                     <td className="border-b border-slate-100 px-5 py-2">
-                      <div className="flex justify-end gap-1">
-                        <RowAction
-                          label="Засах"
-                          icon={<PencilIcon className="size-4" />}
-                          onClick={() => open({ kind: "edit", user })}
-                        />
-                        <RowAction
-                          label="Нууц үг шинэчлэх"
-                          icon={<KeyIcon className="size-4" />}
-                          onClick={() => open({ kind: "password", user })}
-                        />
-                        <RowAction
-                          label="Төхөөрөмж чөлөөлөх"
-                          hidden={user.role !== "student"}
-                          icon={<PhoneIcon className="size-4" />}
-                          disabled={!user.deviceBound}
-                          onClick={() => open({ kind: "device", user })}
-                        />
-                        <RowAction
-                          label="Устгах"
-                          icon={<TrashIcon className="size-4" />}
-                          danger
-                          disabled={isSelf}
-                          onClick={() => open({ kind: "delete", user })}
-                        />
-                      </div>
+                      <UserActions
+                        user={user}
+                        isSelf={isSelf}
+                        onAction={open}
+                      />
                     </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-          {visible.length === 0 && (
-            <p className="py-10 text-center text-[15px] text-slate-500">
-              Хэрэглэгч олдсонгүй.
-            </p>
-          )}
         </div>
+        {visible.length === 0 && (
+          <p className="py-10 text-center text-[15px] text-slate-500">
+            Хэрэглэгч олдсонгүй.
+          </p>
+        )}
       </section>
 
       <Dialog
@@ -326,6 +373,58 @@ export function AdminPanel({
   );
 }
 
+function RolePill({ role }: { role: UserRole }) {
+  return (
+    <span
+      className={cx(
+        "shrink-0 rounded-md px-2 py-0.5 text-[13px] font-medium",
+        ROLE_PILL[role],
+      )}
+    >
+      {ROLE_LABEL[role]}
+    </span>
+  );
+}
+
+function UserActions({
+  user,
+  isSelf,
+  onAction,
+}: {
+  user: AdminUser;
+  isSelf: boolean;
+  onAction: (dialog: DialogState) => void;
+}) {
+  return (
+    <div className="flex shrink-0 justify-end gap-1">
+      <RowAction
+        label="Засах"
+        icon={<PencilIcon className="size-4" />}
+        onClick={() => onAction({ kind: "edit", user })}
+      />
+      <RowAction
+        label="Нууц үг шинэчлэх"
+        icon={<KeyIcon className="size-4" />}
+        onClick={() => onAction({ kind: "password", user })}
+      />
+      <RowAction
+        label="Төхөөрөмж чөлөөлөх"
+        hidden={user.role !== "student"}
+        icon={<PhoneIcon className="size-4" />}
+        disabled={!user.deviceBound}
+        onClick={() => onAction({ kind: "device", user })}
+      />
+      <RowAction
+        label="Устгах"
+        icon={<TrashIcon className="size-4" />}
+        danger
+        disabled={isSelf}
+        onClick={() => onAction({ kind: "delete", user })}
+      />
+    </div>
+  );
+}
+
 function RowAction({
   label,
   icon,
@@ -352,7 +451,7 @@ function RowAction({
       tabIndex={hidden ? -1 : undefined}
       onClick={onClick}
       className={cx(
-        "grid size-8 place-items-center rounded-lg text-slate-400 transition disabled:cursor-not-allowed disabled:opacity-30",
+        "grid size-9 place-items-center rounded-lg text-slate-400 transition md:size-8 disabled:cursor-not-allowed disabled:opacity-30",
         hidden && "invisible",
         danger
           ? "hover:bg-rose-50 hover:text-rose-700"

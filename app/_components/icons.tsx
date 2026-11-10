@@ -289,3 +289,15 @@ export function CloseIcon({ className = "size-[18px]" }: IconProps) {
     </svg>
   );
 }
+
+export function BookIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path
+        d="M4.5 5.5A2 2 0 0 1 6.5 3.5h12v14h-12a2 2 0 0 0-2 2v-14Z"
+        strokeLinejoin="round"
+      />
+      <path d="M4.5 19.5a2 2 0 0 0 2 2h12v-4M9 7.5h6" strokeLinecap="round" />
+    </svg>
+  );
+}

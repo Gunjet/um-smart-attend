@@ -7,6 +7,8 @@ export type AdminUser = {
   name: string;
   email: string | null;
   studentCode: string | null;
+  /** Оюутны анги, жишээ нь "МТ-1". */
+  classGroup: string | null;
   deviceBound: boolean;
   /** ISO огноо */
   createdAt: string;
@@ -17,7 +19,22 @@ export type AdminActionState = {
   message?: string;
   error?: string;
   fieldErrors?: Partial<
-    Record<"fullName" | "identifier" | "password" | "csv", string>
+    Record<
+      "fullName" | "identifier" | "classGroup" | "password" | "csv",
+      string
+    >
+  >;
+  courseErrors?: Partial<
+    Record<
+      | "title"
+      | "code"
+      | "classGroups"
+      | "startDate"
+      | "endDate"
+      | "slots"
+      | "teacherId",
+      string
+    >
   >;
   /** Автоматаар үүсгэсэн нууц үг — зөвхөн нэг удаа харуулна. */
   generatedPassword?: string;
