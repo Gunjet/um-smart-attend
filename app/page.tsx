@@ -2,10 +2,17 @@ import { Suspense } from "react";
 import { AdminApp } from "./_components/admin/admin-app";
 import { StudentApp, TeacherApp } from "./_components/attendance-app";
 import { LoginScreen } from "./_components/login-screen";
+import { getAttendanceStats } from "./_server/admin/stats";
 import { listUsersForAdmin } from "./_server/admin/users";
 import { getCurrentUser } from "./_server/auth/dal";
 import { hasPasskey } from "./_server/auth/webauthn";
-import { getCampusLocation } from "./_server/settings/campus";
+import { closeStaleSessions } from "./_server/attendance/sessions";
+import {
+  getStudentLeaveRequests,
+  getTeacherLeaveRequests,
+  getUlaanbaatarToday,
+} from "./_server/leave/queries";
+import { getCampusSites } from "./_server/settings/campus";
 import {
   getStudentCourses,
   getTeacherCourses,
@@ -27,35 +34,60 @@ async function AuthGate() {
   if (!user) return <LoginScreen />;
 
   if (user.role === "admin") {
-    const [users, courses, campus] = await Promise.all([
+    const [users, courses, sites, stats, today] = await Promise.all([
       listUsersForAdmin(),
       listCoursesForAdmin(),
-      getCampusLocation(),
+      getCampusSites(),
+      getAttendanceStats(),
+      getUlaanbaatarToday(),
     ]);
     return (
-      <AdminApp user={user} users={users} courses={courses} campus={campus} />
+      <AdminApp
+        user={user}
+        users={users}
+        courses={courses}
+        sites={sites}
+        stats={stats}
+        today={today}
+      />
     );
   }
 
+  // Багш хаахаа мартсан (цаг нь өнгөрсөн) ирцийг автоматаар хаана.
+  await closeStaleSessions();
+
   if (user.role === "teacher") {
-    const [courses, records] = await Promise.all([
+    const [courses, records, leaveRequests] = await Promise.all([
       getTeacherCourses(user.id),
       getTeacherReportRecords(user.id),
+      getTeacherLeaveRequests(user.id),
     ]);
-    return <TeacherApp user={user} courses={courses} records={records} />;
+    return (
+      <TeacherApp
+        user={user}
+        courses={courses}
+        records={records}
+        leaveRequests={leaveRequests}
+      />
+    );
   }
 
-  const [courses, campus, passkeyRegistered] = await Promise.all([
-    getStudentCourses(user.id),
-    getCampusLocation(),
-    hasPasskey(user.id),
-  ]);
+  const [courses, sites, passkeyRegistered, leaveRequests, today] =
+    await Promise.all([
+      getStudentCourses(user.id),
+      getCampusSites(),
+      hasPasskey(user.id),
+      getStudentLeaveRequests(user.id),
+      getUlaanbaatarToday(),
+    ]);
   return (
     <StudentApp
       user={user}
       courses={courses}
-      locationRequired={campus !== null}
+      locationRequired={sites.length > 0}
       passkeyRegistered={passkeyRegistered}
+      leaveRequests={leaveRequests}
+      today={today}
     />
   );
 }

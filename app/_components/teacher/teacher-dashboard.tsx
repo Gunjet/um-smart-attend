@@ -1,5 +1,6 @@
 "use client";
 
+import { StatusDot } from "../icons";
 import { useCallback, useState, useTransition } from "react";
 import { useNow } from "../../_hooks/use-now";
 import { usePolling } from "../../_hooks/use-polling";
@@ -33,7 +34,8 @@ export function TeacherDashboard({
   const now = useNow();
   // Өнөөдөр орох хичээлүүд (нээлттэй ирцтэй хичээл үргэлж харагдана).
   const courses = allCourses.filter(
-    (course) => course.scheduledToday || course.openSessionId,
+    (course) =>
+      !course.archived && (course.scheduledToday || course.openSessionId),
   );
   const [selectedId, setSelectedId] = useState<string | null>(
     () =>
@@ -51,7 +53,9 @@ export function TeacherDashboard({
   const liveCourse = courses.find((item) => item.openSessionId) ?? null;
   const sessionId =
     course?.openSessionId ??
-    (closed && closed.courseId === course?.id ? closed.sessionId : null);
+    (closed && closed.courseId === course?.id ? closed.sessionId : null) ??
+    course?.closedTodaySessionId ??
+    null;
   const isLive = Boolean(course?.openSessionId);
 
   const selectCourse = (id: string) => {
@@ -122,8 +126,9 @@ export function TeacherDashboard({
                   Ирцийн бүртгэл
                 </h2>
                 {isLive && (
-                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-[13px] font-semibold text-emerald-800">
-                    ● LIVE ОДОО
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[13px] font-semibold text-emerald-800">
+                    <StatusDot pulse />
+                    ШУУД
                   </span>
                 )}
               </div>

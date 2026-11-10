@@ -1,4 +1,5 @@
 import { formatClassGroups } from "../../_lib/programs";
+import { CheckIcon, CloseIcon, StatusDot } from "../icons";
 import { sum } from "../../_lib/attendance";
 import type { StudentCourse } from "../../_lib/dto";
 import { cx } from "../ui";
@@ -7,13 +8,13 @@ export function AttendanceOverview({ courses }: { courses: StudentCourse[] }) {
   const summary = [
     {
       label: "Ирсэн",
-      icon: "✓",
+      icon: <CheckIcon className="size-5" />,
       iconClass: "bg-emerald-50 text-emerald-700",
       value: sum(courses, (course) => course.attended),
     },
     {
       label: "Тасалсан",
-      icon: "×",
+      icon: <CloseIcon className="size-5" />,
       iconClass: "bg-rose-50 text-rose-600",
       value: sum(courses, (course) => course.absent),
     },
@@ -91,7 +92,14 @@ export function AttendanceOverview({ courses }: { courses: StudentCourse[] }) {
                           : "bg-amber-50 text-amber-800",
                       )}
                     >
-                      {course.checkedIn ? "✓ Бүртгүүлсэн" : "● Ирц нээлттэй"}
+                      <span className="inline-flex items-center gap-1">
+                        {course.checkedIn ? (
+                          <CheckIcon className="size-3.5" />
+                        ) : (
+                          <StatusDot pulse />
+                        )}
+                        {course.checkedIn ? "Бүртгүүлсэн" : "Ирц нээлттэй"}
+                      </span>
                     </span>
                   )}
                 </div>
@@ -107,6 +115,11 @@ export function AttendanceOverview({ courses }: { courses: StudentCourse[] }) {
                   >
                     {course.absent} тасалсан
                   </span>
+                  {course.excused > 0 && (
+                    <span className="mt-0.5 block text-amber-700">
+                      {course.excused} чөлөөтэй
+                    </span>
+                  )}
                 </div>
               </li>
             ))}

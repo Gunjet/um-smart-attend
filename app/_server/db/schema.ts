@@ -32,6 +32,8 @@ export const users = pgTable(
     studentCode: text("student_code").unique(),
     /** Оюутны анги (хөтөлбөр + курс), жишээ нь "МТ-1". */
     classGroup: text("class_group"),
+    /** Архивласан (нэвтрэх боломжгүй, ирцийн түүх хадгалагдана). */
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
     passwordHash: text("password_hash").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -90,6 +92,8 @@ export const courses = pgTable(
     teacherId: uuid("teacher_id").references(() => users.id, {
       onDelete: "set null",
     }),
+    /** Архивласан (хуваарь, оюутанд харагдахгүй; тайлан хадгалагдана). */
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -125,6 +129,8 @@ export const enrollments = pgTable(
 export const attendanceStatus = pgEnum("attendance_status", [
   "present",
   "absent",
+  /** Чөлөөний хүсэлт зөвшөөрөгдсөн. */
+  "excused",
 ]);
 
 /** Багш нэг удаа ирц нээж хаах нь нэг session. */
@@ -142,6 +148,8 @@ export const attendanceSessions = pgTable(
       .notNull()
       .defaultNow(),
     closedAt: timestamp("closed_at", { withTimezone: true }),
+    /** Хэддэх парын ирц (1–8). Хуучин бичлэгт null. */
+    period: smallint("period"),
     /** QR код болон 6 оронтой кодын гарын үсгийн нууц түлхүүр. Клиент рүү явахгүй. */
     qrSecret: text("qr_secret").notNull(),
   },
@@ -223,22 +231,75 @@ export const webauthnChallenges = pgTable("webauthn_challenges", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });
 
-/** Сургуулийн байршил (ганц мөр, id = 1). Ирц бүртгэхэд зайг үүнээс тооцно. */
-export const campusLocation = pgTable(
-  "campus_location",
+/**
+ * Сургуулийн байрууд. Оюутан аль нэг байрны радиус дотор байвал ирц
+ * бүртгүүлж болно.
+ */
+export const campusSites = pgTable(
+  "campus_sites",
   {
-    id: smallint("id").primaryKey().default(1),
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
     latitude: doublePrecision("latitude").notNull(),
     longitude: doublePrecision("longitude").notNull(),
     /** Зөвшөөрөх радиус (м). */
     radiusM: integer("radius_m").notNull().default(150),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
+    createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (table) => [
-    check("campus_location_singleton", sql`${table.id} = 1`),
-    check("campus_location_radius", sql`${table.radiusM} between 20 and 5000`),
+    check("campus_sites_radius", sql`${table.radiusM} between 20 and 5000`),
+  ],
+);
+
+/**
+ * Нэвтрэх оролдлогын тоо (нууц үг таахаас хамгаална).
+ * key = эрх + нэвтрэх нэр, жишээ нь "student:B261940110".
+ */
+export const loginAttempts = pgTable("login_attempts", {
+  key: text("key").primaryKey(),
+  failures: integer("failures").notNull().default(0),
+  firstFailedAt: timestamp("first_failed_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+});
+
+export const leaveStatus = pgEnum("leave_status", [
+  "pending",
+  "approved",
+  "rejected",
+]);
+
+/** Оюутны чөлөөний хүсэлт: тухайн өдрийн тухайн хичээлийн бүх пар. */
+export const leaveRequests = pgTable(
+  "leave_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    courseId: uuid("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    /** Чөлөө авах өдөр, "YYYY-MM-DD". */
+    date: date("date", { mode: "string" }).notNull(),
+    reason: text("reason").notNull(),
+    /** Нотлох баримтын зураг (жижигрүүлсэн JPEG data URL). */
+    attachment: text("attachment"),
+    status: leaveStatus("status").notNull().default("pending"),
+    reviewedBy: uuid("reviewed_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("leave_requests_course_idx").on(table.courseId, table.date),
+    index("leave_requests_student_idx").on(table.studentId),
   ],
 );
 

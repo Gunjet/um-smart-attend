@@ -1,18 +1,18 @@
 import "server-only";
-import { eq } from "drizzle-orm";
-import type { CampusSettings } from "../../_lib/geo";
+import { asc } from "drizzle-orm";
+import type { CampusSite } from "../../_lib/geo";
 import { getDb, schema } from "../db";
 
-/** Сургуулийн байршил. Тохируулаагүй бол null (байршил шалгахгүй). */
-export async function getCampusLocation(): Promise<CampusSettings | null> {
-  const [row] = await getDb()
+/** Сургуулийн байрууд. Хоосон бол байршил шалгахгүй. */
+export async function getCampusSites(): Promise<CampusSite[]> {
+  return getDb()
     .select({
-      latitude: schema.campusLocation.latitude,
-      longitude: schema.campusLocation.longitude,
-      radiusM: schema.campusLocation.radiusM,
+      id: schema.campusSites.id,
+      name: schema.campusSites.name,
+      latitude: schema.campusSites.latitude,
+      longitude: schema.campusSites.longitude,
+      radiusM: schema.campusSites.radiusM,
     })
-    .from(schema.campusLocation)
-    .where(eq(schema.campusLocation.id, 1))
-    .limit(1);
-  return row ?? null;
+    .from(schema.campusSites)
+    .orderBy(asc(schema.campusSites.createdAt));
 }

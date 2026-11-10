@@ -1,7 +1,7 @@
 "use server";
 
 import { randomInt } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import * as z from "zod";
@@ -253,10 +253,25 @@ export async function resetPassword(
         updatedAt: new Date(),
       })
       .where(eq(schema.users.id, id))
-      .returning({ id: schema.users.id });
+      .returning({
+        id: schema.users.id,
+        role: schema.users.role,
+        email: schema.users.email,
+        studentCode: schema.users.studentCode,
+      });
     if (!updated.length) return { error: "Хэрэглэгч олдсонгүй." };
     // Хуучин нууц үгээр нэвтэрсэн бүх session-ийг хаана.
     await db.delete(schema.sessions).where(eq(schema.sessions.userId, id));
+    // Буруу оролдлогоос болсон түгжээг арилгана.
+    const [user] = updated;
+    await db
+      .delete(schema.loginAttempts)
+      .where(
+        inArray(schema.loginAttempts.key, [
+          `student:${user.studentCode ?? ""}`,
+          `teacher:${user.email ?? ""}`,
+        ]),
+      );
   } catch (error) {
     console.error("resetPassword failed", error);
     return SERVER_ERROR;
@@ -298,6 +313,21 @@ export async function resetPasskey(
 
 /* --------------------------------- Устгах ---------------------------------- */
 
+/** Ирцийн түүхтэй (ирц бүртгүүлсэн, ирц нээсэн, хичээл заадаг) эсэх. */
+async function userHasHistory(id: string) {
+  const [row] = await getDb().execute<{ has: boolean }>(sql`
+    select (
+      exists (select 1 from attendance_records where student_id = ${id} or marked_by = ${id})
+      or exists (select 1 from attendance_sessions where opened_by = ${id})
+      or exists (select 1 from courses where teacher_id = ${id})
+    ) as has`);
+  return Boolean(row?.has);
+}
+
+/**
+ * Ирцийн түүхгүй бол бүрмөсөн устгана. Түүхтэй бол архивлана: нэвтрэх
+ * боломжгүй болж, хичээлүүдээс хасагдана, харин тайлан хэвээр үлдэнэ.
+ */
 export async function deleteUser(
   _previous: AdminActionState,
   formData: FormData,
@@ -306,14 +336,64 @@ export async function deleteUser(
   if (!admin) return FORBIDDEN;
   const id = field(formData, "id");
   if (id === admin.id) return { error: "Өөрийн бүртгэлийг устгах боломжгүй." };
+  let archived = false;
   try {
-    await getDb().delete(schema.users).where(eq(schema.users.id, id));
+    const db = getDb();
+    if (await userHasHistory(id)) {
+      archived = true;
+      await db.transaction(async (tx) => {
+        await tx
+          .update(schema.users)
+          .set({ archivedAt: new Date(), updatedAt: new Date() })
+          .where(eq(schema.users.id, id));
+        await tx.delete(schema.sessions).where(eq(schema.sessions.userId, id));
+        await tx
+          .delete(schema.enrollments)
+          .where(eq(schema.enrollments.studentId, id));
+      });
+    } else {
+      await db.delete(schema.users).where(eq(schema.users.id, id));
+    }
   } catch (error) {
     console.error("deleteUser failed", error);
     return SERVER_ERROR;
   }
   refresh();
-  return { ok: true, message: "Хэрэглэгч устгагдлаа." };
+  return {
+    ok: true,
+    message: archived
+      ? "Ирцийн түүхтэй тул архивлагдлаа. Тайлан хадгалагдсан."
+      : "Хэрэглэгч устгагдлаа.",
+  };
+}
+
+/** Архивласан хэрэглэгчийг сэргээнэ (оюутан бол ангийн хичээлүүдэд дахин бүртгэнэ). */
+export async function restoreUser(
+  _previous: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  if (!(await authorizeAdmin())) return FORBIDDEN;
+  const id = field(formData, "id");
+  try {
+    await getDb().transaction(async (tx) => {
+      const [user] = await tx
+        .update(schema.users)
+        .set({ archivedAt: null, updatedAt: new Date() })
+        .where(eq(schema.users.id, id))
+        .returning({
+          role: schema.users.role,
+          classGroup: schema.users.classGroup,
+        });
+      if (user?.role === "student") {
+        await syncStudentGroup(tx, id, null, user.classGroup);
+      }
+    });
+  } catch (error) {
+    console.error("restoreUser failed", error);
+    return SERVER_ERROR;
+  }
+  refresh();
+  return { ok: true, message: "Хэрэглэгч сэргээгдлээ." };
 }
 
 /* -------------------------- Оюутныг CSV-ээр оруулах -------------------------- */
@@ -351,13 +431,23 @@ export async function importStudents(
     };
   }
 
-  const rows: { studentCode: string; fullName: string }[] = [];
+  const rows: {
+    studentCode: string;
+    fullName: string;
+    classGroup: string | null;
+  }[] = [];
   const invalidLines: number[] = [];
   const seen = new Set<string>();
   lines.forEach((line, index) => {
-    const [rawCode = "", ...nameParts] = line
+    const cells = line
       .split(/[,;\t]/)
-      .map((cell) => cell.trim());
+      .map((cell) => cell.trim().replace(/^"|"$/g, ""));
+    const [rawCode = "", ...nameParts] = cells;
+    // Сүүлийн багана анги (жишээ нь "МТ-1") байж болно.
+    const last = nameParts.at(-1)?.toUpperCase() ?? "";
+    const classGroup =
+      nameParts.length >= 2 && CLASS_GROUPS.includes(last) ? last : null;
+    if (classGroup) nameParts.pop();
     const code = studentCodeSchema.safeParse(rawCode.replace(/^"|"$/g, ""));
     const name = fullNameSchema.safeParse(
       nameParts.join(" ").replace(/^"|"$/g, ""),
@@ -370,7 +460,7 @@ export async function importStudents(
     }
     if (seen.has(code.data)) return;
     seen.add(code.data);
-    rows.push({ studentCode: code.data, fullName: name.data });
+    rows.push({ studentCode: code.data, fullName: name.data, classGroup });
   });
 
   if (!rows.length) {
@@ -384,14 +474,29 @@ export async function importStudents(
   let added = 0;
   try {
     const passwordHash = await hashPassword(password.data);
-    const inserted = await getDb()
-      .insert(schema.users)
-      .values(
-        rows.map((row) => ({ role: "student" as const, passwordHash, ...row })),
-      )
-      .onConflictDoNothing()
-      .returning({ id: schema.users.id });
-    added = inserted.length;
+    added = await getDb().transaction(async (tx) => {
+      const inserted = await tx
+        .insert(schema.users)
+        .values(
+          rows.map((row) => ({
+            role: "student" as const,
+            passwordHash,
+            ...row,
+          })),
+        )
+        .onConflictDoNothing()
+        .returning({
+          id: schema.users.id,
+          classGroup: schema.users.classGroup,
+        });
+      // Ангитай оюутнуудыг ангийнх нь хичээлүүдэд автоматаар бүртгэнэ.
+      for (const user of inserted) {
+        if (user.classGroup) {
+          await syncStudentGroup(tx, user.id, null, user.classGroup);
+        }
+      }
+      return inserted.length;
+    });
   } catch (error) {
     console.error("importStudents failed", error);
     return SERVER_ERROR;

@@ -26,8 +26,7 @@ export function usePolling<T>(
       try {
         const next = await fetcherRef.current();
         if (!cancelled) setData(next);
-      } catch {
-      }
+      } catch {}
       if (!cancelled && enabled) timer = setTimeout(tick, intervalMs);
     };
     void tick();

@@ -21,7 +21,11 @@ async function authorizeAdmin() {
   return user.role === "admin" ? user : null;
 }
 
-const CampusSchema = z.object({
+const SiteSchema = z.object({
+  name: z
+    .string()
+    .min(2, { error: "Байрны нэрээ оруулна уу." })
+    .max(60, { error: "Нэр хэт урт байна." }),
   latitude: z.coerce
     .number({ error: "Өргөрөг тоо байна." })
     .min(-90, { error: "Өргөрөг −90…90 хооронд байна." })
@@ -40,27 +44,28 @@ const CampusSchema = z.object({
 const field = (formData: FormData, name: string) =>
   String(formData.get(name) ?? "").trim();
 
-export async function saveCampusLocation(
+/** Сургуулийн байр нэмэх. */
+export async function addCampusSite(
   _previous: AdminActionState,
   formData: FormData,
 ): Promise<AdminActionState> {
   if (!(await authorizeAdmin())) return FORBIDDEN;
 
   const raw = {
+    name: field(formData, "name"),
     latitude: field(formData, "latitude"),
     longitude: field(formData, "longitude"),
     radiusM: field(formData, "radiusM"),
   };
   if (!raw.latitude || !raw.longitude) {
-    return {
-      campusErrors: { latitude: "Сургуулийн байршлаа оруулна уу." },
-    };
+    return { campusErrors: { latitude: "Байршлаа оруулна уу." } };
   }
-  const parsed = CampusSchema.safeParse(raw);
+  const parsed = SiteSchema.safeParse(raw);
   if (!parsed.success) {
     const fields = z.flattenError(parsed.error).fieldErrors;
     return {
       campusErrors: {
+        name: fields.name?.[0],
         latitude: fields.latitude?.[0],
         longitude: fields.longitude?.[0],
         radiusM: fields.radiusM?.[0],
@@ -69,32 +74,29 @@ export async function saveCampusLocation(
   }
 
   try {
-    await getDb()
-      .insert(schema.campusLocation)
-      .values({ id: 1, ...parsed.data })
-      .onConflictDoUpdate({
-        target: schema.campusLocation.id,
-        set: { ...parsed.data, updatedAt: new Date() },
-      });
+    await getDb().insert(schema.campusSites).values(parsed.data);
   } catch (error) {
-    console.error("saveCampusLocation failed", error);
+    console.error("addCampusSite failed", error);
     return SERVER_ERROR;
   }
   refresh();
-  return { ok: true, message: "Сургуулийн байршил хадгалагдлаа." };
+  return { ok: true, message: `«${parsed.data.name}» нэмэгдлээ.` };
 }
 
-/** Байршлын шалгалтыг унтраана (тохиргоог устгана). */
-export async function clearCampusLocation(): Promise<AdminActionState> {
+/** Сургуулийн байр хасах. Бүгдийг хасвал байршил шалгахгүй. */
+export async function deleteCampusSite(
+  _previous: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
   if (!(await authorizeAdmin())) return FORBIDDEN;
   try {
     await getDb()
-      .delete(schema.campusLocation)
-      .where(eq(schema.campusLocation.id, 1));
+      .delete(schema.campusSites)
+      .where(eq(schema.campusSites.id, field(formData, "id")));
   } catch (error) {
-    console.error("clearCampusLocation failed", error);
+    console.error("deleteCampusSite failed", error);
     return SERVER_ERROR;
   }
   refresh();
-  return { ok: true, message: "Байршлын шалгалт унтарлаа." };
+  return { ok: true, message: "Байр хасагдлаа." };
 }

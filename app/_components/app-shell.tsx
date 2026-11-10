@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { useNow } from "../_hooks/use-now";
 import { formatMongolianDate } from "../_lib/date";
-import { LogoutIcon } from "./icons";
+import { CheckIcon, CloseIcon, LogoutIcon } from "./icons";
 import { ThemeToggle } from "./theme-toggle";
 import { cx, Logo } from "./ui";
 
@@ -45,6 +45,8 @@ export function AppShell<T extends string>({
 }) {
   const now = useNow();
   const activeItem = navItems.find((item) => item.id === activeView);
+  // Гарах товчтой нийлээд 5-аас олон бол утасны цэсийг нягт болгоно.
+  const crowded = navItems.length + 1 > 5;
 
   return (
     <main className="min-h-screen min-w-0 bg-slate-50 text-slate-800">
@@ -119,16 +121,14 @@ export function AppShell<T extends string>({
           role="status"
           aria-live="polite"
         >
-          <span className="text-emerald-700" aria-hidden="true">
-            ✓
-          </span>
+          <CheckIcon className="size-5 shrink-0 text-emerald-700" />
           {notice}
           <button
-            className="ml-auto text-lg text-slate-500"
+            className="ml-auto grid size-7 place-items-center rounded-md text-slate-500 hover:bg-slate-100"
             onClick={onDismissNotice}
             aria-label="Мэдэгдэл хаах"
           >
-            ×
+            <CloseIcon className="size-4" />
           </button>
         </div>
       )}
@@ -136,7 +136,10 @@ export function AppShell<T extends string>({
       {children}
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-20 grid border-t border-slate-200 bg-surface p-2 md:hidden"
+        className={cx(
+          "fixed inset-x-0 bottom-0 z-20 grid border-t border-slate-200 bg-surface md:hidden",
+          crowded ? "gap-0.5 p-1.5" : "p-2",
+        )}
         style={{
           gridTemplateColumns: `repeat(${navItems.length + 1}, minmax(0, 1fr))`,
         }}
@@ -146,7 +149,9 @@ export function AppShell<T extends string>({
           <button
             key={item.id}
             className={cx(
-              "flex flex-col items-center gap-1 rounded-lg py-2 text-[13px]",
+              "flex min-w-0 flex-col items-center gap-1 rounded-lg py-2",
+              // Цэс олон бол (админ) үсгийг жижигрүүлж, багтаана.
+              crowded ? "text-[11px]" : "text-[13px]",
               item.id === activeView
                 ? "bg-emerald-50 font-medium text-emerald-800"
                 : "text-slate-600",
@@ -155,11 +160,16 @@ export function AppShell<T extends string>({
             onClick={() => onNavigate(item.id)}
           >
             {item.icon}
-            {item.shortLabel}
+            <span className="max-w-full truncate px-0.5">
+              {item.shortLabel}
+            </span>
           </button>
         ))}
         <button
-          className="flex flex-col items-center gap-1 rounded-lg py-2 text-[13px] text-slate-600"
+          className={cx(
+            "flex min-w-0 flex-col items-center gap-1 rounded-lg py-2 text-slate-600",
+            crowded ? "text-[11px]" : "text-[13px]",
+          )}
           onClick={onSignOut}
         >
           <LogoutIcon />

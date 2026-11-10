@@ -3,6 +3,7 @@ import type { AttendanceStatus } from "./types";
 export const STATUS = {
   present: "Ирсэн",
   absent: "Тасалсан",
+  excused: "Чөлөөтэй",
   pending: "Хүлээгдэж байна",
 } as const satisfies Record<string, AttendanceStatus>;
 
@@ -13,12 +14,14 @@ export const QR_PREFIX = "UM-SMART-ATTEND";
 export const STATUS_TEXT_CLASS: Record<AttendanceStatus, string> = {
   Ирсэн: "text-emerald-700",
   Тасалсан: "text-rose-700",
+  Чөлөөтэй: "text-amber-700",
   "Хүлээгдэж байна": "text-slate-500",
 };
 
 export const STATUS_PILL_CLASS: Record<AttendanceStatus, string> = {
   Ирсэн: "bg-emerald-50 text-emerald-800",
   Тасалсан: "bg-rose-50 text-rose-800",
+  Чөлөөтэй: "bg-amber-50 text-amber-800",
   "Хүлээгдэж байна": "bg-slate-100 text-slate-600",
 };
 

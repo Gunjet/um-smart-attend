@@ -12,12 +12,15 @@ export function Dialog({
   onClose,
   title,
   description,
+  wide = false,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   description?: string;
+  /** Хүснэгт харуулах өргөн цонх. */
+  wide?: boolean;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -39,7 +42,7 @@ export function Dialog({
       }}
       aria-labelledby="dialog-title"
       // Гар утсанд доороос гарч ирэх бүтэн өргөнтэй sheet, том дэлгэцэнд голдоо.
-      className="mx-0 mt-auto mb-0 max-h-[92dvh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-2xl border border-slate-200 bg-surface p-0 text-slate-800 shadow-xl backdrop:bg-black/50 sm:m-auto sm:max-h-[90dvh] sm:w-[min(92vw,30rem)] sm:rounded-2xl"
+      className={`mx-0 mt-auto mb-0 max-h-[92dvh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-2xl border border-slate-200 bg-surface p-0 text-slate-800 shadow-xl backdrop:bg-black/50 sm:m-auto sm:max-h-[90dvh] sm:rounded-2xl ${wide ? "sm:w-[min(94vw,52rem)]" : "sm:w-[min(92vw,30rem)]"}`}
     >
       <div className="px-4 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-6">
         <div className="mb-5 flex items-start justify-between gap-4">

@@ -5,10 +5,11 @@ import type { AdminUser } from "../../_lib/admin-types";
 import type { Notify, UserRole } from "../../_lib/types";
 import { Dialog } from "../dialog";
 import {
+  FingerprintIcon,
   KeyIcon,
   PencilIcon,
-  FingerprintIcon,
   PlusIcon,
+  SearchIcon,
   TrashIcon,
   UploadIcon,
 } from "../icons";
@@ -21,13 +22,14 @@ import {
   UserForm,
 } from "./user-forms";
 
-type Filter = "all" | UserRole;
+type Filter = "all" | UserRole | "archived";
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "Бүгд" },
   { id: "student", label: "Оюутан" },
   { id: "teacher", label: "Багш" },
   { id: "admin", label: "Админ" },
+  { id: "archived", label: "Архив" },
 ];
 
 const ROLE_PILL: Record<UserRole, string> = {
@@ -39,7 +41,10 @@ const ROLE_PILL: Record<UserRole, string> = {
 type DialogState =
   | { kind: "create" }
   | { kind: "import" }
-  | { kind: "edit" | "password" | "device" | "delete"; user: AdminUser };
+  | {
+      kind: "edit" | "password" | "device" | "delete" | "restore";
+      user: AdminUser;
+    };
 
 const DIALOG_TITLE: Record<DialogState["kind"], string> = {
   create: "Хэрэглэгч нэмэх",
@@ -48,6 +53,7 @@ const DIALOG_TITLE: Record<DialogState["kind"], string> = {
   password: "Нууц үг шинэчлэх",
   device: "Face ID устгах",
   delete: "Хэрэглэгч устгах",
+  restore: "Хэрэглэгч сэргээх",
 };
 
 export function AdminPanel({
@@ -75,17 +81,22 @@ export function AdminPanel({
     if (message) notify(message);
   };
 
+  // Архивласан хэрэглэгчид зөвхөн "Архив" шүүлтүүрт харагдана.
+  const active = users.filter((user) => !user.archived);
   const counts: Record<Filter, number> = {
-    all: users.length,
-    student: users.filter((user) => user.role === "student").length,
-    teacher: users.filter((user) => user.role === "teacher").length,
-    admin: users.filter((user) => user.role === "admin").length,
+    all: active.length,
+    student: active.filter((user) => user.role === "student").length,
+    teacher: active.filter((user) => user.role === "teacher").length,
+    admin: active.filter((user) => user.role === "admin").length,
+    archived: users.length - active.length,
   };
 
   const query = search.trim().toLowerCase();
   const visible = users.filter(
     (user) =>
-      (filter === "all" || user.role === filter) &&
+      (filter === "archived"
+        ? user.archived
+        : !user.archived && (filter === "all" || user.role === filter)) &&
       (!query ||
         [user.name, user.email, user.studentCode, user.classGroup]
           .filter(Boolean)
@@ -155,7 +166,7 @@ export function AdminPanel({
           </div>
           <label className="flex w-full items-center gap-2 rounded-lg border border-slate-200 px-3 sm:w-auto">
             <span className="text-slate-400" aria-hidden="true">
-              ⌕
+              <SearchIcon />
             </span>
             <input
               className="w-full bg-transparent py-2 sm:w-56 text-[15px] outline-none placeholder:text-slate-400"
@@ -360,7 +371,9 @@ export function AdminPanel({
             onDone={done}
           />
         )}
-        {(dialog?.kind === "device" || dialog?.kind === "delete") && (
+        {(dialog?.kind === "device" ||
+          dialog?.kind === "delete" ||
+          dialog?.kind === "restore") && (
           <ConfirmForm
             key={dialogKey}
             user={dialog.user}
@@ -399,6 +412,19 @@ function UserActions({
   isSelf: boolean;
   onAction: (dialog: DialogState) => void;
 }) {
+  if (user.archived) {
+    return (
+      <div className="flex shrink-0 justify-end">
+        <button
+          type="button"
+          onClick={() => onAction({ kind: "restore", user })}
+          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-slate-50"
+        >
+          Сэргээх
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="flex shrink-0 justify-end gap-1">
       <RowAction
@@ -419,7 +445,7 @@ function UserActions({
         onClick={() => onAction({ kind: "device", user })}
       />
       <RowAction
-        label="Устгах"
+        label={user.hasHistory ? "Архивлах" : "Устгах"}
         icon={<TrashIcon className="size-4" />}
         danger
         disabled={isSelf}

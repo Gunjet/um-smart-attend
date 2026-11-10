@@ -1,5 +1,6 @@
 "use client";
 
+import { SearchIcon } from "../icons";
 import { useState } from "react";
 import { STATUS, STATUS_TEXT_CLASS } from "../../_lib/constants";
 import type { RosterEntry } from "../../_lib/dto";
@@ -110,7 +111,7 @@ export function LiveRoster({
 
       <label className="mb-3 flex items-center gap-2 rounded-lg border border-slate-200 px-3">
         <span className="text-slate-400" aria-hidden="true">
-          ⌕
+          <SearchIcon />
         </span>
         <input
           className="w-full bg-transparent py-2 text-[15px] outline-none placeholder:text-slate-400"

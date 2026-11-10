@@ -1,0 +1,1 @@
+DROP TABLE "campus_location" CASCADE;

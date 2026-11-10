@@ -83,7 +83,7 @@ export function PasskeySetup({ notify }: { notify: Notify }) {
           className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-left text-sm text-rose-800"
           role="alert"
         >
-          ⚠ {error}
+          {error}
         </p>
       )}
       <button

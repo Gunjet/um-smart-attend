@@ -67,7 +67,7 @@ export function InAppBrowserNotice() {
           onClick={copyLink}
           className="rounded-lg border border-amber-300 bg-surface px-3 py-2 font-medium text-amber-800 hover:bg-amber-100"
         >
-          {copied ? "Хуулагдлаа ✓" : "Линк хуулах"}
+          {copied ? "Хуулагдлаа" : "Линк хуулах"}
         </button>
       </div>
       <p className="mt-3 text-[13px] text-amber-700">

@@ -18,9 +18,16 @@ import { LocationError, requestLocation } from "../../_lib/device-location";
 import type { CheckInStep, StudentCourse } from "../../_lib/dto";
 import type { Notify } from "../../_lib/types";
 import { describeWebAuthnError } from "../../_lib/webauthn-client";
-import { checkIn } from "../../_server/attendance/actions";
+import { checkIn, precheckCheckIn } from "../../_server/attendance/actions";
 import { startCheckInPasskey } from "../../_server/auth/passkey-actions";
-import { FingerprintIcon, MapPinIcon, QrIcon } from "../icons";
+import {
+  AlertIcon,
+  CheckIcon,
+  FingerprintIcon,
+  MapPinIcon,
+  QrIcon,
+  StatusDot,
+} from "../icons";
 import { cx, primaryButtonClass } from "../ui";
 
 const SCANNER_ELEMENT_ID = "student-qr-reader";
@@ -50,6 +57,10 @@ export function CheckInFlow({
 
   const [scanned, setScanned] = useState<string | null>(null);
   const [progress, setProgress] = useState<Progress>(IDLE);
+  /** Урьдчилан шалгаж зөв болсон код (Face ID-г зөвхөн зөв кодонд асууна). */
+  const [validCode, setValidCode] = useState<string | null>(null);
+  const [checkingCode, setCheckingCode] = useState(false);
+
   const [pending, startTransition] = useTransition();
 
   const passkeyOptions = useRef<PublicKeyCredentialRequestOptionsJSON | null>(
@@ -132,6 +143,7 @@ export function CheckInFlow({
         setProgress(IDLE);
         setCode("");
         setScanned(null);
+        setValidCode(null);
         void preparePasskey();
         notify(result.message ?? "Ирц бүртгэгдлээ.");
       }),
@@ -143,17 +155,34 @@ export function CheckInFlow({
     if (locationRequired) requestLocation().catch(() => {});
   };
 
+  const precheck = useCallback(async (value: string) => {
+    setCheckingCode(true);
+    setError("");
+    setProgress(IDLE);
+    const result = await precheckCheckIn(value);
+    setCheckingCode(false);
+    if (result.ok) {
+      setValidCode(value);
+      return true;
+    }
+    setValidCode(null);
+    setProgress({ active: null, failed: "code" });
+    setError(result.error);
+    return false;
+  }, []);
+
   const scanner = useQrScanner(
     SCANNER_ELEMENT_ID,
-    useCallback((text: string) => {
-      setError("");
-      setProgress(IDLE);
-      setScanned(text);
-      return true; // эхний уншилтын дараа камерыг зогсооно
-    }, []),
+    useCallback(
+      (text: string) => {
+        void precheck(text).then((ok) => setScanned(ok ? text : null));
+        return true; // эхний уншилтын дараа камерыг зогсооно
+      },
+      [precheck],
+    ),
   );
 
-  const hasCode = Boolean(scanned) || code.length === 6;
+  const hasCode = Boolean(validCode);
   const stepState = (step: CheckInStep): StepState => {
     if (progress.failed === step) return "error";
     if (progress.active === step) return "active";
@@ -166,6 +195,7 @@ export function CheckInFlow({
 
   const resetScan = () => {
     setScanned(null);
+    setValidCode(null);
     setError("");
     setProgress(IDLE);
   };
@@ -181,7 +211,10 @@ export function CheckInFlow({
         </div>
         {openCourse && (
           <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[13px] font-semibold text-emerald-800">
-            ● Нээлттэй
+            <span className="inline-flex items-center gap-1.5">
+              <StatusDot pulse />
+              Нээлттэй
+            </span>
           </span>
         )}
       </div>
@@ -227,7 +260,7 @@ export function CheckInFlow({
             {scanned ? (
               <>
                 <span className="grid size-16 place-items-center rounded-full bg-emerald-700 text-3xl text-white">
-                  ✓
+                  <CheckIcon className="size-8" />
                 </span>
                 <strong className="text-[15px] font-semibold text-emerald-800">
                   QR уншигдлаа
@@ -308,8 +341,9 @@ export function CheckInFlow({
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          if (/^\d{6}$/.test(code)) submit(code);
-          else setError("6 оронтой кодоо оруулна уу.");
+          if (validCode === code) submit(code);
+          else if (!/^\d{6}$/.test(code))
+            setError("6 оронтой кодоо оруулна уу.");
         }}
       >
         <label htmlFor="checkin-code" className="sr-only">
@@ -325,17 +359,24 @@ export function CheckInFlow({
             value={code}
             onFocus={prefetchLocation}
             onChange={(event) => {
-              setCode(event.target.value.replace(/\D/g, ""));
-              if (progress.failed === "code") setProgress(IDLE);
+              const next = event.target.value.replace(/\D/g, "");
+              setCode(next);
+              setValidCode(null);
+              if (progress.failed === "code") {
+                setProgress(IDLE);
+                setError("");
+              }
+              // 6 орон бүрэн болмогц кодыг шалгана.
+              if (next.length === 6) void precheck(next);
             }}
             className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-surface px-3 py-3 text-center font-mono text-xl tracking-[0.4em] text-slate-900 outline-none placeholder:text-slate-300 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
           />
           <button
             type="submit"
             className="shrink-0 rounded-xl border border-slate-200 bg-surface px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-            disabled={pending || code.length !== 6}
+            disabled={pending || checkingCode || validCode !== code}
           >
-            {pending && !scanned ? "…" : "Бүртгүүлэх"}
+            {checkingCode ? "…" : pending && !scanned ? "…" : "Бүртгүүлэх"}
           </button>
         </div>
       </form>
@@ -367,7 +408,13 @@ function Step({
           state === "idle" && "border-slate-200 bg-surface text-slate-400",
         )}
       >
-        {state === "done" ? "✓" : state === "error" ? "!" : icon}
+        {state === "done" ? (
+          <CheckIcon />
+        ) : state === "error" ? (
+          <AlertIcon />
+        ) : (
+          icon
+        )}
       </span>
       <span
         className={cx(

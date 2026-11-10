@@ -3,33 +3,36 @@
 import { useState } from "react";
 import { LocationError, requestLocation } from "../../_lib/device-location";
 import {
-  type CampusSettings,
+  type CampusSite,
   DEFAULT_RADIUS_M,
   formatDistance,
   mapLink,
 } from "../../_lib/geo";
 import type { Notify } from "../../_lib/types";
 import {
-  clearCampusLocation,
-  saveCampusLocation,
+  addCampusSite,
+  deleteCampusSite,
 } from "../../_server/admin/campus-actions";
-import { MapPinIcon } from "../icons";
+import { MapPinIcon, TrashIcon } from "../icons";
 import { cx, primaryButtonClass } from "../ui";
 import { Field, FormError, inputClass, useAdminAction } from "./user-forms";
 
 const round = (value: number) => String(Math.round(value * 1e6) / 1e6);
 
 /**
- * Сургуулийн байршил: оюутан ирц бүртгүүлэхэд утасных нь байршил
- * энэ цэгээс радиус дотор байх ёстой.
+ * Сургуулийн байрууд: оюутан ирц бүртгүүлэхэд утасных нь байршил аль нэг
+ * байрны радиус дотор байх ёстой. Байр нэмээгүй бол байршил шалгахгүй.
  */
 export function CampusPanel({
-  campus,
+  sites,
   notify,
 }: {
-  campus: CampusSettings | null;
+  sites: CampusSite[];
   notify: Notify;
 }) {
+  // Нэмэх бүрт форм цэвэрлэгдэнэ.
+  const [formKey, setFormKey] = useState(0);
+
   return (
     <div className="mx-auto max-w-3xl px-4 pb-24 pt-6 sm:px-6 md:ml-60 md:px-8">
       <div className="mb-6">
@@ -37,111 +40,95 @@ export function CampusPanel({
           Сургуулийн байршил
         </h1>
         <p className="mt-1 text-[15px] text-slate-500">
-          Радиусаас гадна байгаа оюутны ирц бүртгэгдэхгүй.
+          Аль нэг байрны радиусаас гадна байгаа оюутны ирц бүртгэгдэхгүй.
         </p>
       </div>
 
-      <StatusCard campus={campus} notify={notify} />
+      {sites.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-surface p-5">
+          <p className="font-medium text-slate-700">
+            Байршлын шалгалт идэвхгүй байна
+          </p>
+          <p className="mt-1 text-sm text-slate-500">
+            Байр нэмэх хүртэл оюутнуудын байршлыг шалгахгүй.
+          </p>
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {sites.map((site) => (
+            <SiteRow key={site.id} site={site} notify={notify} />
+          ))}
+        </ul>
+      )}
 
       <section className="mt-4 rounded-xl border border-slate-200 bg-surface p-4 sm:p-6">
-        <h2 className="text-lg font-semibold text-slate-900">
-          {campus ? "Байршил өөрчлөх" : "Байршил тохируулах"}
-        </h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Сургууль дээр байхдаа «Одоогийн байршлыг ашиглах» товчийг дарвал
-          хамгийн зөв.
-        </p>
-        <CampusForm
-          key={JSON.stringify(campus)}
-          campus={campus}
-          notify={notify}
+        <h2 className="text-lg font-semibold text-slate-900">Байр нэмэх</h2>
+        <SiteForm
+          key={formKey}
+          defaultName={sites.length ? "" : "Үндсэн байр"}
+          onDone={(message) => {
+            notify(message);
+            setFormKey((key) => key + 1);
+          }}
         />
       </section>
     </div>
   );
 }
 
-function StatusCard({
-  campus,
-  notify,
-}: {
-  campus: CampusSettings | null;
-  notify: Notify;
-}) {
-  const [state, onSubmit, pending] = useAdminAction(
-    clearCampusLocation,
-    notify,
-  );
-
-  if (!campus) {
-    return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-surface p-5">
-        <p className="font-medium text-slate-700">
-          Байршлын шалгалт идэвхгүй байна
-        </p>
-        <p className="mt-1 text-sm text-slate-500">
-          Байршил тохируулах хүртэл оюутнуудын байршлыг шалгахгүй.
-        </p>
-      </div>
-    );
-  }
-
+function SiteRow({ site, notify }: { site: CampusSite; notify: Notify }) {
+  const [state, onSubmit, pending] = useAdminAction(deleteCampusSite, notify);
   return (
-    <div className="rounded-xl border border-emerald-200 bg-surface p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700">
-            <MapPinIcon />
-          </span>
-          <div>
-            <p className="font-semibold text-slate-900">
-              Байршлын шалгалт идэвхтэй
-            </p>
-            <p className="mt-0.5 text-sm text-slate-500">
-              Радиус {formatDistance(campus.radiusM)} ·{" "}
-              <span className="tabular-nums">
-                {round(campus.latitude)}, {round(campus.longitude)}
-              </span>
-            </p>
-            <a
-              href={mapLink(campus)}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-1 inline-block text-sm font-medium text-emerald-700 hover:text-emerald-900"
-            >
-              Газрын зураг дээр харах ↗
-            </a>
-          </div>
+    <li className="rounded-xl border border-emerald-200 bg-surface p-4">
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700">
+          <MapPinIcon />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-slate-900">{site.name}</p>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Радиус {formatDistance(site.radiusM)} ·{" "}
+            <span className="tabular-nums">
+              {round(site.latitude)}, {round(site.longitude)}
+            </span>
+          </p>
+          <a
+            href={mapLink(site)}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1 inline-block text-sm font-medium text-emerald-700 hover:text-emerald-900"
+          >
+            Газрын зураг дээр харах ↗
+          </a>
         </div>
         <form onSubmit={onSubmit}>
+          <input type="hidden" name="id" value={site.id} />
           <button
             type="submit"
             disabled={pending}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+            title="Хасах"
+            aria-label={`${site.name}-г хасах`}
+            className="grid size-9 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
           >
-            {pending ? "Унтрааж байна…" : "Шалгалтыг унтраах"}
+            <TrashIcon className="size-4" />
           </button>
         </form>
       </div>
       <FormError message={state?.error} />
-    </div>
+    </li>
   );
 }
 
-function CampusForm({
-  campus,
-  notify,
+function SiteForm({
+  defaultName,
+  onDone,
 }: {
-  campus: CampusSettings | null;
-  notify: Notify;
+  defaultName: string;
+  onDone: (message: string) => void;
 }) {
-  const [state, onSubmit, pending] = useAdminAction(saveCampusLocation, notify);
-  const [latitude, setLatitude] = useState(
-    campus ? round(campus.latitude) : "",
-  );
-  const [longitude, setLongitude] = useState(
-    campus ? round(campus.longitude) : "",
-  );
+  const [state, onSubmit, pending] = useAdminAction(addCampusSite, onDone);
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
   const [locating, setLocating] = useState(false);
   const [locateInfo, setLocateInfo] = useState<{
     text: string;
@@ -156,9 +143,10 @@ function CampusForm({
       const location = await requestLocation();
       setLatitude(round(location.latitude));
       setLongitude(round(location.longitude));
+      const poor = location.accuracy > 100;
       setLocateInfo({
-        text: `Нарийвчлал ±${formatDistance(location.accuracy)}.`,
-        warn: location.accuracy > 100,
+        text: `Нарийвчлал ±${formatDistance(location.accuracy)}.${poor ? " Нарийвчлал муу байна — гадаа эсвэл цонхны дэргэд дахин оролдоно уу." : ""}`,
+        warn: poor,
       });
     } catch (cause) {
       setLocateInfo({
@@ -175,6 +163,16 @@ function CampusForm({
 
   return (
     <form onSubmit={onSubmit} className="mt-4 space-y-4" noValidate>
+      <Field label="Байрны нэр" htmlFor="site-name" error={errors?.name}>
+        <input
+          id="site-name"
+          name="name"
+          className={inputClass}
+          defaultValue={defaultName}
+          autoComplete="off"
+        />
+      </Field>
+
       <button
         type="button"
         onClick={useCurrentLocation}
@@ -192,9 +190,6 @@ function CampusForm({
           )}
         >
           {locateInfo.text}
-          {locateInfo.warn &&
-            !locateInfo.text.includes("зөвшөөр") &&
-            " Нарийвчлал муу байна — утаснаас, гадаа эсвэл цонхны дэргэд дахин оролдоно уу."}
         </p>
       )}
 
@@ -211,7 +206,6 @@ function CampusForm({
             className={cx(inputClass, "tabular-nums")}
             value={latitude}
             onChange={(event) => setLatitude(event.target.value)}
-            placeholder="43.57"
           />
         </Field>
         <Field
@@ -226,7 +220,6 @@ function CampusForm({
             className={cx(inputClass, "tabular-nums")}
             value={longitude}
             onChange={(event) => setLongitude(event.target.value)}
-            placeholder="104.42"
           />
         </Field>
       </div>
@@ -235,7 +228,6 @@ function CampusForm({
         label="Зөвшөөрөх радиус (метр)"
         htmlFor="campus-radius"
         error={errors?.radiusM}
-        hint="Барилга дотор GPS 20–80 м алддаг тул 150 м-ээс багагүй байлгахыг зөвлөж байна."
       >
         <input
           id="campus-radius"
@@ -246,7 +238,7 @@ function CampusForm({
           max={5000}
           step={10}
           className={cx(inputClass, "tabular-nums")}
-          defaultValue={campus?.radiusM ?? DEFAULT_RADIUS_M}
+          defaultValue={DEFAULT_RADIUS_M}
         />
       </Field>
 
@@ -256,7 +248,7 @@ function CampusForm({
         disabled={pending}
         className={cx(primaryButtonClass, "w-full sm:w-auto")}
       >
-        {pending ? "Хадгалж байна…" : "Хадгалах"}
+        {pending ? "Хадгалж байна…" : "Нэмэх"}
       </button>
     </form>
   );

@@ -325,3 +325,116 @@ export function FingerprintIcon({ className = "size-[18px]" }: IconProps) {
     </svg>
   );
 }
+
+export function SearchIcon({ className = "size-4" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4 4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function CheckIcon({ className = "size-4" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path
+        d="m5 12.5 4.5 4.5L19 7.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function PlayIcon({ className = "size-4" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path
+        d="M8 5.5v13l10.5-6.5L8 5.5Z"
+        strokeLinejoin="round"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+export function ExpandIcon({ className = "size-4" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path
+        d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function DownloadIcon({ className = "size-4" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path
+        d="M12 4.5v11M7.5 11l4.5 4.5 4.5-4.5M5 19.5h14"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function ClockIcon({ className = "size-4" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function ChevronRightIcon({ className = "size-4" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="m9.5 6 6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function AlertIcon({ className = "size-4" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5v5.5M12 16.2v.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** "Шууд" / "Нээлттэй" төлвийн жижиг цэг. */
+export function StatusDot({ pulse = false }: { pulse?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-block size-2 shrink-0 rounded-full bg-current${pulse ? " animate-pulse" : ""}`}
+    />
+  );
+}
+
+export function CalendarIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="4" y="5.5" width="16" height="14.5" rx="2" />
+      <path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function ChartIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path
+        d="M4.5 19.5h15M7.5 16v-5M12 16V7.5M16.5 16v-3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}

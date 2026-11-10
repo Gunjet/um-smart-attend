@@ -1,4 +1,4 @@
-import type { CourseAttendanceReport } from "./attendance";
+import { columnLabel, type CourseAttendanceReport } from "./attendance";
 import { formatMonthKey } from "./date";
 
 function cell(value: string | number) {
@@ -16,12 +16,14 @@ export function reportsToCsv(
   for (const report of reports) {
     lines.push(
       row([report.course.title, report.course.code, formatMonthKey(monthKey)]),
-      row(["Оюутан", "Оюутны код", ...report.dates]),
+      row(["Оюутан", "Оюутны код", ...report.columns.map(columnLabel)]),
       ...report.rows.map((item) =>
         row([
           item.student.name,
           item.student.id,
-          ...report.dates.map((date) => item.statusByDate[date] ?? ""),
+          ...report.columns.map(
+            (column) => item.statusByDate[column.key] ?? "",
+          ),
         ]),
       ),
       "",

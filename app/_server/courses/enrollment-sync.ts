@@ -1,5 +1,5 @@
 import "server-only";
-import { and, arrayContains, eq, inArray, not } from "drizzle-orm";
+import { and, arrayContains, eq, inArray, isNull, not } from "drizzle-orm";
 import { getDb, schema } from "../db";
 
 const { courses, enrollments, users } = schema;
@@ -42,7 +42,13 @@ export async function syncCourseGroups(
     const students = await tx
       .select({ id: users.id })
       .from(users)
-      .where(and(eq(users.role, "student"), inArray(users.classGroup, added)));
+      .where(
+        and(
+          eq(users.role, "student"),
+          inArray(users.classGroup, added),
+          isNull(users.archivedAt),
+        ),
+      );
     if (students.length) {
       await tx
         .insert(enrollments)
@@ -88,7 +94,12 @@ export async function syncStudentGroup(
     const target = await tx
       .select({ id: courses.id })
       .from(courses)
-      .where(arrayContains(courses.classGroups, [after]));
+      .where(
+        and(
+          arrayContains(courses.classGroups, [after]),
+          isNull(courses.archivedAt),
+        ),
+      );
     if (target.length) {
       await tx
         .insert(enrollments)

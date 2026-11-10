@@ -102,3 +102,76 @@ const dotted = (dateKey: string) => dateKey.replaceAll("-", ".");
 export function formatDateRange(startDate: string, endDate: string) {
   return `${dotted(startDate)} – ${dotted(endDate)}`;
 }
+
+/** Тухайн гарагт орох парын дугаарууд (эрэмбэлсэн, давхардалгүй). */
+export function periodsForDay(slots: CourseSlot[], day: number) {
+  const numbers = new Set<number>();
+  for (const slot of slots) {
+    if (slot.day !== day) continue;
+    for (const period of slotPeriods(slot)) numbers.add(period.number);
+  }
+  return [...numbers].sort((a, b) => a - b);
+}
+
+/** Ирц авах боломжтой хугацаа: пар эхлэхээс өмнө ба дууссаны дараа (минут). */
+export const ATTENDANCE_WINDOW_MIN = 10;
+
+const toMinutes = (time: string) => {
+  const [hour, minute] = time.split(":").map(Number);
+  return hour * 60 + minute;
+};
+
+const pad2 = (value: number) => String(value).padStart(2, "0");
+export const formatMinutes = (minutes: number) =>
+  `${pad2(Math.floor(minutes / 60))}:${pad2(minutes % 60)}`;
+
+/** Парын ирц авах цонх [эхлэх−10, дуусах+10] (өдрийн минутаар). */
+export function periodWindow(number: number) {
+  const period = periodByNumber(number);
+  if (!period) return null;
+  return {
+    from: toMinutes(period.start) - ATTENDANCE_WINDOW_MIN,
+    to: toMinutes(period.end) + ATTENDANCE_WINDOW_MIN,
+  };
+}
+
+export function isWithinPeriodWindow(number: number, nowMinutes: number) {
+  const window = periodWindow(number);
+  return Boolean(
+    window && nowMinutes >= window.from && nowMinutes <= window.to,
+  );
+}
+
+/**
+ * Өнөөдрийн парууд дундаас ирц нь аваагүй, одоо нээж болох пар ба
+ * дараа нь нээгдэх пар.
+ */
+export function periodAvailability(
+  todayPeriods: number[],
+  takenPeriods: number[],
+  nowMinutes: number,
+) {
+  const untaken = todayPeriods.filter(
+    (period) => !takenPeriods.includes(period),
+  );
+  const openable =
+    untaken.find((period) => isWithinPeriodWindow(period, nowMinutes)) ?? null;
+  const upcoming =
+    untaken.find((period) => (periodWindow(period)?.from ?? 0) > nowMinutes) ??
+    null;
+  return { openable, upcoming, untaken };
+}
+
+/** Улаанбаатарын цагаар одоогийн өдрийн минут (серверт). */
+export function ulaanbaatarMinutes(date = new Date()) {
+  const [hour, minute] = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Ulaanbaatar",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  })
+    .format(date)
+    .split(":")
+    .map(Number);
+  return hour * 60 + minute;
+}

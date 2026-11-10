@@ -1,12 +1,18 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import * as z from "zod";
 import { detectInAppBrowser } from "../../_lib/in-app-browser";
 import { getDb, schema } from "../db";
 import { verifyPasswordOrDummy } from "./password";
+import {
+  clearLoginFailures,
+  isLoginLocked,
+  LOCKED_MESSAGE,
+  recordLoginFailure,
+} from "./rate-limit";
 import { createSession, deleteSession } from "./session";
 
 export type LoginState = {
@@ -60,6 +66,10 @@ async function authenticate({
   identifier,
   password,
 }: z.infer<typeof LoginSchema>): Promise<string | undefined> {
+  // Нууц үг таахаас хамгаалж, олон удаа буруу оролдвол түр түгжинэ.
+  const attemptKey = `${role}:${role === "student" ? identifier.toUpperCase() : identifier.toLowerCase()}`;
+  if (await isLoginLocked(attemptKey)) return LOCKED_MESSAGE;
+
   const db = getDb();
   const [user] = await db
     .select()
@@ -69,16 +79,23 @@ async function authenticate({
         ? and(
             eq(schema.users.role, "student"),
             eq(schema.users.studentCode, identifier.toUpperCase()),
+            isNull(schema.users.archivedAt),
           )
         : and(
             inArray(schema.users.role, ["teacher", "admin"]),
             eq(schema.users.email, identifier.toLowerCase()),
+            isNull(schema.users.archivedAt),
           ),
     )
     .limit(1);
 
   const passwordOk = await verifyPasswordOrDummy(password, user?.passwordHash);
-  if (!user || !passwordOk) return INVALID_CREDENTIALS;
+  if (!user || !passwordOk) {
+    return (await recordLoginFailure(attemptKey))
+      ? LOCKED_MESSAGE
+      : INVALID_CREDENTIALS;
+  }
+  await clearLoginFailures(attemptKey);
 
   // Ирцийг Face ID-гаар баталгаажуулдаг тул апп доторх хөтөч (passkey
   // дэмждэггүй) -өөс оюутныг нэвтрүүлэхгүй.

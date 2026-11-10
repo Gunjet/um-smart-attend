@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckIcon } from "../icons";
 import type { StudentCourse } from "../../_lib/dto";
 import type { Notify } from "../../_lib/types";
 import { AttendanceOverview } from "./attendance-overview";
@@ -39,7 +40,7 @@ export function StudentHome({
             className="grid size-11 shrink-0 place-items-center rounded-full bg-emerald-50 text-xl text-emerald-700"
             aria-hidden="true"
           >
-            ✓
+            <CheckIcon className="size-6" />
           </span>
           <div>
             <h2 className="text-[15px] font-semibold">Ирц бүртгэгдлээ!</h2>

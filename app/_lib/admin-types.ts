@@ -11,6 +11,10 @@ export type AdminUser = {
   classGroup: string | null;
   /** Оюутан Face ID / хурууны хээгээ бүртгүүлсэн эсэх. */
   passkeyRegistered: boolean;
+  /** Архивласан (нэвтрэх боломжгүй). */
+  archived: boolean;
+  /** Ирцийн түүхтэй (устгавал архивлагдана). */
+  hasHistory: boolean;
   /** ISO огноо */
   createdAt: string;
 };
@@ -37,7 +41,9 @@ export type AdminActionState = {
       string
     >
   >;
-  campusErrors?: Partial<Record<"latitude" | "longitude" | "radiusM", string>>;
+  campusErrors?: Partial<
+    Record<"name" | "latitude" | "longitude" | "radiusM", string>
+  >;
   /** Автоматаар үүсгэсэн нууц үг — зөвхөн нэг удаа харуулна. */
   generatedPassword?: string;
 } | null;

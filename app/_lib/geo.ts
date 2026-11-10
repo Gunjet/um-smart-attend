@@ -5,8 +5,12 @@ export type GeoPoint = { latitude: number; longitude: number };
 /** Оюутны утаснаас ирэх байршил. accuracy нь метрээр. */
 export type DeviceLocation = GeoPoint & { accuracy: number };
 
-/** Сургуулийн байршлын тохиргоо. */
-export type CampusSettings = GeoPoint & { radiusM: number };
+/** Сургуулийн нэг байр (байршил + радиус). */
+export type CampusSite = GeoPoint & {
+  id: string;
+  name: string;
+  radiusM: number;
+};
 
 export const DEFAULT_RADIUS_M = 150;
 

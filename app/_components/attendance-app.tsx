@@ -3,15 +3,23 @@
 import { useState, useTransition } from "react";
 import { useNotice } from "../_hooks/use-notice";
 import type { StudentCourse, TeacherCourse } from "../_lib/dto";
+import type { LeaveRequestItem } from "../_lib/leave";
 import type { AttendanceRecord, SessionUser } from "../_lib/types";
 import { logout } from "../_server/auth/actions";
 import { AppShell, type NavItem } from "./app-shell";
-import { CheckCircleIcon, DashboardIcon, ReportIcon } from "./icons";
+import {
+  CalendarIcon,
+  CheckCircleIcon,
+  DashboardIcon,
+  ReportIcon,
+} from "./icons";
+import { LeavePage } from "./student/leave-page";
 import { StudentHome } from "./student/student-home";
 import { TeacherDashboard } from "./teacher/teacher-dashboard";
+import { LeaveReview } from "./teacher/leave-review";
 import { TeacherReport } from "./teacher/teacher-report";
 
-type TeacherView = "dashboard" | "report";
+type TeacherView = "dashboard" | "report" | "leave";
 
 const TEACHER_NAV: NavItem<TeacherView>[] = [
   {
@@ -28,12 +36,20 @@ const TEACHER_NAV: NavItem<TeacherView>[] = [
   },
 ];
 
-const STUDENT_NAV: NavItem<"attendance">[] = [
+type StudentView = "attendance" | "leave";
+
+const STUDENT_NAV: NavItem<StudentView>[] = [
   {
     id: "attendance",
     label: "Миний ирц",
     shortLabel: "Миний ирц",
     icon: <CheckCircleIcon />,
+  },
+  {
+    id: "leave",
+    label: "Чөлөөний хүсэлт",
+    shortLabel: "Чөлөө",
+    icon: <CalendarIcon />,
   },
 ];
 
@@ -55,18 +71,35 @@ export function TeacherApp({
   user,
   courses,
   records,
+  leaveRequests,
 }: {
   user: SessionUser;
   courses: TeacherCourse[];
   records: AttendanceRecord[];
+  leaveRequests: LeaveRequestItem[];
 }) {
   const { notify, shellProps } = useShell(user, "Багшийн эрх");
   const [view, setView] = useState<TeacherView>("dashboard");
+  const pendingLeave = leaveRequests.filter(
+    (request) => request.status === "pending",
+  ).length;
+  // Хүлээгдэж буй хүсэлтийн тоог цэсэнд харуулна.
+  const nav: NavItem<TeacherView>[] = [
+    ...TEACHER_NAV,
+    {
+      id: "leave",
+      label: pendingLeave
+        ? `Чөлөөний хүсэлт · ${pendingLeave}`
+        : "Чөлөөний хүсэлт",
+      shortLabel: pendingLeave ? `Хүсэлт · ${pendingLeave}` : "Хүсэлт",
+      icon: <CalendarIcon />,
+    },
+  ];
 
   return (
     <AppShell
       {...shellProps}
-      navItems={TEACHER_NAV}
+      navItems={nav}
       activeView={view}
       onNavigate={setView}
     >
@@ -75,7 +108,10 @@ export function TeacherApp({
           records={records}
           courses={courses}
           onBack={() => setView("dashboard")}
+          notify={notify}
         />
+      ) : view === "leave" ? (
+        <LeaveReview requests={leaveRequests} notify={notify} />
       ) : (
         <TeacherDashboard
           courses={courses}
@@ -92,27 +128,42 @@ export function StudentApp({
   courses,
   locationRequired,
   passkeyRegistered,
+  leaveRequests,
+  today,
 }: {
   user: SessionUser;
   courses: StudentCourse[];
   locationRequired: boolean;
   passkeyRegistered: boolean;
+  leaveRequests: LeaveRequestItem[];
+  /** Улаанбаатарын цагаар өнөөдөр, "YYYY-MM-DD". */
+  today: string;
 }) {
   const { notify, shellProps } = useShell(user, "Оюутны эрх");
+  const [view, setView] = useState<StudentView>("attendance");
   return (
     <AppShell
       {...shellProps}
       navItems={STUDENT_NAV}
-      activeView="attendance"
-      onNavigate={() => undefined}
+      activeView={view}
+      onNavigate={setView}
     >
-      <StudentHome
-        firstName={user.firstName}
-        courses={courses}
-        locationRequired={locationRequired}
-        passkeyRegistered={passkeyRegistered}
-        notify={notify}
-      />
+      {view === "leave" ? (
+        <LeavePage
+          courses={courses}
+          requests={leaveRequests}
+          today={today}
+          notify={notify}
+        />
+      ) : (
+        <StudentHome
+          firstName={user.firstName}
+          courses={courses}
+          locationRequired={locationRequired}
+          passkeyRegistered={passkeyRegistered}
+          notify={notify}
+        />
+      )}
     </AppShell>
   );
 }

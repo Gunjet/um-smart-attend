@@ -11,10 +11,14 @@ export type SessionUser = {
   studentCode: string | null;
 };
 
-export type AttendanceStatus = "Ирсэн" | "Тасалсан" | "Хүлээгдэж байна";
+export type AttendanceStatus =
+  "Ирсэн" | "Тасалсан" | "Чөлөөтэй" | "Хүлээгдэж байна";
 
 export type Student = {
+  /** Оюутны код. */
   id: string;
+  /** Хэрэглэгчийн id (тайлангаас ирц засахад). */
+  userId?: string;
   name: string;
   initials: string;
   /** Бүртгүүлсэн цаг (HH:MM) эсвэл "—". */
@@ -36,6 +40,10 @@ export type Course = {
 export type AttendanceRecord = {
   /** YYYY-MM-DD (локал цагаар). */
   date: string;
+  /** Хэддэх пар (хуучин бичлэгт null). */
+  period: number | null;
+  /** Энэ баганад хамаарах ирцийн session-ууд (засахад). */
+  sessionIds: string[];
   courseCode: string;
   courseTitle: string;
   students: Student[];

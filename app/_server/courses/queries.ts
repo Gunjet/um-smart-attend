@@ -14,6 +14,7 @@ import {
   formatSlots,
   formatSlotTime,
   mergeSlots,
+  periodsForDay,
   sortSlots,
 } from "../../_lib/schedule";
 import type { AttendanceRecord, AttendanceStatus } from "../../_lib/types";
@@ -47,10 +48,12 @@ export const scheduledTodaySql = sql<boolean>`(
     select 1 from jsonb_array_elements(${courses.slots}) slot
     where (slot->>'day')::int = ${todayDowSql}))`;
 
-const STATUS_LABEL: Record<"present" | "absent", AttendanceStatus> = {
-  present: "Ирсэн",
-  absent: "Тасалсан",
-};
+const STATUS_LABEL: Record<"present" | "absent" | "excused", AttendanceStatus> =
+  {
+    present: "Ирсэн",
+    absent: "Тасалсан",
+    excused: "Чөлөөтэй",
+  };
 
 /* --------------------------------- Багш --------------------------------- */
 
@@ -70,6 +73,19 @@ export async function getTeacherCourses(
       todayDow: todayDowSql,
       enrolled: sql<number>`(select count(*)::int from enrollments e where e.course_id = ${courses.id})`,
       openSessionId: attendanceSessions.id,
+      archived: sql<boolean>`${courses.archivedAt} is not null`,
+      openPeriod: attendanceSessions.period,
+      closedTodaySessionId: sql<string | null>`(
+        select s.id from attendance_sessions s
+        where s.course_id = ${courses.id} and s.closed_at is not null
+          and (s.opened_at at time zone 'Asia/Ulaanbaatar')::date
+            = (now() at time zone 'Asia/Ulaanbaatar')::date
+        order by s.closed_at desc limit 1)`,
+      takenPeriods: sql<number[]>`coalesce((
+        select array_agg(s.period::int) from attendance_sessions s
+        where s.course_id = ${courses.id} and s.period is not null
+          and (s.opened_at at time zone 'Asia/Ulaanbaatar')::date
+            = (now() at time zone 'Asia/Ulaanbaatar')::date), '{}')`,
     })
     .from(courses)
     .leftJoin(
@@ -87,10 +103,14 @@ export async function getTeacherCourses(
       const todaySlots = sortSlots(
         slots.filter((slot) => slot.day === todayDow),
       );
+      const todayPeriods = periodsForDay(slots, todayDow);
+      const taken = new Set(row.takenPeriods);
       return {
         ...row,
         scheduledToday: Boolean(row.scheduledToday),
         todaySlots,
+        todayPeriods,
+        nextPeriod: todayPeriods.find((period) => !taken.has(period)) ?? null,
         time: todaySlots.length
           ? mergeSlots(todaySlots).map(formatSlotTime).join(", ")
           : formatSlots(slots),
@@ -162,15 +182,18 @@ export async function getSessionRoster(
 }
 
 /**
- * Тайланд: багшийн хичээлүүдийн хаагдсан session-уудын ирц.
- * Нэг өдөр нэг хичээлд хэд хэдэн session байвал нэгтгэнэ (аль нэгэнд ирсэн бол "Ирсэн").
+ * Тайланд: багшийн хичээлүүдийн хаагдсан session-уудын ирц, пар бүрээр.
+ * Нэг пар (эсвэл пар тодорхойгүй хуучин бичлэгт нэг өдөр) хэд хэдэн session
+ * байвал нэгтгэнэ (аль нэгэнд ирсэн бол "Ирсэн").
  */
 export async function getTeacherReportRecords(
   teacherId: string,
 ): Promise<AttendanceRecord[]> {
   const rows = await getDb()
     .select({
+      sessionId: attendanceSessions.id,
       openedAt: attendanceSessions.openedAt,
+      period: attendanceSessions.period,
       courseCode: courses.code,
       courseTitle: courses.title,
       studentId: users.id,
@@ -201,11 +224,14 @@ export async function getTeacherReportRecords(
   >();
   for (const row of rows) {
     const date = dateKeyFormatter.format(row.openedAt);
-    const key = `${row.courseCode}|${date}`;
+    // Пар бүр тусдаа багана (хуучин, пар тодорхойгүй бичлэгүүд өдрөөрөө нэгдэнэ).
+    const key = `${row.courseCode}|${date}|${row.period ?? ""}`;
     let record = byKey.get(key);
     if (!record) {
       record = {
         date,
+        period: row.period,
+        sessionIds: [],
         courseCode: row.courseCode,
         courseTitle: row.courseTitle,
         students: [],
@@ -213,11 +239,15 @@ export async function getTeacherReportRecords(
       };
       byKey.set(key, record);
     }
+    if (!record.sessionIds.includes(row.sessionId)) {
+      record.sessionIds.push(row.sessionId);
+    }
     const status = STATUS_LABEL[row.status];
     const existing = record.byStudent.get(row.studentId);
     if (!existing) {
       record.byStudent.set(row.studentId, {
         id: row.studentCode ?? "",
+        userId: row.studentId,
         name: row.name,
         initials: nameParts(row.name).initials,
         time: "—",
@@ -265,6 +295,11 @@ export async function getStudentCourses(
         join attendance_sessions s on s.id = r.session_id
         where s.course_id = ${courses.id} and r.student_id = ${studentId}
           and r.status = 'absent')`,
+      excused: sql<number>`(
+        select count(*)::int from attendance_records r
+        join attendance_sessions s on s.id = r.session_id
+        where s.course_id = ${courses.id} and r.student_id = ${studentId}
+          and r.status = 'excused')`,
     })
     .from(enrollments)
     .innerJoin(courses, eq(courses.id, enrollments.courseId))
@@ -276,7 +311,9 @@ export async function getStudentCourses(
         isNull(attendanceSessions.closedAt),
       ),
     )
-    .where(eq(enrollments.studentId, studentId))
+    .where(
+      and(eq(enrollments.studentId, studentId), isNull(courses.archivedAt)),
+    )
     .orderBy(asc(courses.title));
 
   return rows.map(({ startDate, endDate, slots, ...row }) => ({
@@ -302,6 +339,8 @@ export async function listCoursesForAdmin(): Promise<AdminCourse[]> {
       slots: courses.slots,
       teacherId: courses.teacherId,
       teacherName: teacher.fullName,
+      archived: sql<boolean>`${courses.archivedAt} is not null`,
+      hasHistory: sql<boolean>`exists (select 1 from attendance_sessions s where s.course_id = ${courses.id})`,
       studentIds: sql<string[]>`coalesce(
         (select array_agg(e.student_id::text) from enrollments e where e.course_id = ${courses.id}),
         '{}')`,

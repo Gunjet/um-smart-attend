@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronRightIcon, ClockIcon, StatusDot } from "../icons";
 import { useNow } from "../../_hooks/use-now";
 import { minutesOfDay, parseClock } from "../../_lib/date";
 import type { TeacherCourse } from "../../_lib/dto";
@@ -27,7 +28,7 @@ function getCourseState(
     return { label: "Хичээл явагдаж байна", tone: "text-emerald-700" };
   if (slots.some((slot) => current < slot.start))
     return { label: "Удахгүй", tone: "text-amber-700" };
-  return { label: "Хичээл дууссан", tone: "text-slate-400" };
+  return { label: "", tone: "text-slate-400" };
 }
 
 export function CourseList({
@@ -49,7 +50,12 @@ export function CourseList({
       {courses.map((course) => {
         const isSelected = selectedId === course.id;
         const isLive = Boolean(course.openSessionId);
-        const isClosed = !isLive && closedCourseId === course.id;
+        // Өнөөдрийн бүх парын ирц авагдсан бол "Ирц хаагдсан".
+        const isClosed =
+          !isLive &&
+          course.nextPeriod === null &&
+          (closedCourseId === course.id ||
+            Boolean(course.closedTodaySessionId));
         const state = getCourseState(course, now, isLive, isClosed);
 
         return (
@@ -77,7 +83,10 @@ export function CourseList({
               </small>
             </span>
             <span className="hidden text-sm text-slate-500 sm:block">
-              ◷ {course.time}
+              <span className="inline-flex items-center gap-1.5">
+                <ClockIcon className="size-3.5" />
+                {course.time}
+              </span>
             </span>
             <span className="hidden text-sm tabular-nums text-slate-500 sm:block">
               {course.enrolled} оюутан
@@ -85,8 +94,10 @@ export function CourseList({
             <span className={cx("text-right text-sm sm:text-left", state.tone)}>
               {state.label && (
                 <>
-                  <span aria-hidden="true">● </span>
-                  <span className="hidden sm:inline">{state.label}</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <StatusDot />
+                    <span className="hidden sm:inline">{state.label}</span>
+                  </span>
                 </>
               )}
             </span>
@@ -94,7 +105,7 @@ export function CourseList({
               className="hidden text-right text-slate-400 sm:block"
               aria-hidden="true"
             >
-              ›
+              <ChevronRightIcon />
             </span>
           </button>
         );

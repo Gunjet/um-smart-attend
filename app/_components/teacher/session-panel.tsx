@@ -1,9 +1,16 @@
 "use client";
 
+import { CheckIcon, ExpandIcon, PlayIcon, StatusDot } from "../icons";
 import { formatClassGroups } from "../../_lib/programs";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useNow } from "../../_hooks/use-now";
+import { minutesOfDay } from "../../_lib/date";
+import {
+  formatMinutes,
+  periodAvailability,
+  periodWindow,
+} from "../../_lib/schedule";
 import { useSessionQr } from "../../_hooks/use-session-qr";
 import type { TeacherCourse } from "../../_lib/dto";
 import { cx, primaryButtonClass } from "../ui";
@@ -26,6 +33,11 @@ export function SessionPanel({
     <section className="rounded-xl border border-slate-200 bg-surface p-4 sm:p-5">
       <p className="text-[13px] font-bold tracking-widest text-slate-400">
         {course.openSessionId ? "ИДЭВХТЭЙ ХИЧЭЭЛ" : "СОНГОСОН ХИЧЭЭЛ"}
+        {course.openSessionId && course.openPeriod && (
+          <span className="ml-2 rounded-md bg-emerald-50 px-2 py-0.5 tracking-normal text-emerald-800">
+            {course.openPeriod}-р пар
+          </span>
+        )}
       </p>
       <h3 className="mt-2 text-lg font-semibold text-slate-800">
         {course.title}
@@ -36,6 +48,8 @@ export function SessionPanel({
           .join(" · ")}
       </p>
       <div className="my-4 border-t border-slate-100" />
+
+      {course.openSessionId && <PeriodOverNote period={course.openPeriod} />}
 
       {course.openSessionId ? (
         <LiveQr
@@ -52,17 +66,109 @@ export function SessionPanel({
           бүртгүүлнэ үү.
         </p>
       ) : (
-        <div className="flex flex-col items-center py-4 text-center">
-          <button
-            className={primaryButtonClass}
-            onClick={onOpen}
-            disabled={busy}
-          >
-            {busy ? "Нээж байна…" : "▶ Ирц нээх"}
-          </button>
-        </div>
+        <PeriodControls course={course} busy={busy} onOpen={onOpen} />
       )}
     </section>
+  );
+}
+
+/** Парын цаг (+10 минут) өнгөрсөн ч ирц нээлттэй байвал багшид сануулна. */
+function PeriodOverNote({ period }: { period: number | null }) {
+  const now = useNow();
+  const window = period ? periodWindow(period) : null;
+  if (!now || !window || minutesOfDay(now) <= window.to) return null;
+  return (
+    <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+      {period}-р парын цаг дууссан тул оюутнууд бүртгүүлэх боломжгүй. Ирцээ
+      хаана уу.
+    </p>
+  );
+}
+
+/** Пар бүрийн ирцийн төлөв ба дараагийн парын ирц нээх товч. */
+function PeriodControls({
+  course,
+  busy,
+  onOpen,
+}: {
+  course: TeacherCourse;
+  busy: boolean;
+  onOpen: () => void;
+}) {
+  const now = useNow();
+  const multi = course.todayPeriods.length > 1;
+  const closed = course.todayPeriods.filter((period) =>
+    course.takenPeriods.includes(period),
+  );
+  // Пар бүрийн ирцийг эхлэхээс 10 минутын өмнөөс дууссанаас 10 минут хүртэл авна.
+  const { openable, upcoming, untaken } = periodAvailability(
+    course.todayPeriods,
+    course.takenPeriods,
+    now ? minutesOfDay(now) : -1,
+  );
+  const upcomingFrom = upcoming ? periodWindow(upcoming)?.from : undefined;
+
+  return (
+    <div className="flex flex-col items-center gap-3 py-4 text-center">
+      {multi && (
+        <ul className="flex flex-wrap justify-center gap-2" aria-label="Парууд">
+          {course.todayPeriods.map((period) => {
+            const done = closed.includes(period);
+            const next = period === (openable ?? upcoming);
+            return (
+              <li
+                key={period}
+                className={cx(
+                  "rounded-full border px-3 py-1 text-sm font-medium",
+                  done
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : next
+                      ? "border-emerald-700 text-emerald-800"
+                      : "border-slate-200 text-slate-400",
+                )}
+              >
+                <span className="inline-flex items-center gap-1">
+                  {done && <CheckIcon className="size-3.5" />}
+                  {period}-р пар
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {!now ? null : openable ? (
+        <button className={primaryButtonClass} onClick={onOpen} disabled={busy}>
+          {!busy && <PlayIcon className="size-3.5" />}
+          {busy
+            ? "Нээж байна…"
+            : multi
+              ? `${openable}-р парын ирц нээх`
+              : "Ирц нээх"}
+        </button>
+      ) : upcoming && upcomingFrom !== undefined ? (
+        <p className="text-[15px] text-slate-500">
+          {multi ? `${upcoming}-р парын ирц` : "Ирц"}{" "}
+          <strong className="font-semibold text-slate-700">
+            {formatMinutes(upcomingFrom)}
+          </strong>
+          -аас нээгдэнэ
+        </p>
+      ) : untaken.length === 0 ? (
+        <>
+          <span className="grid size-11 place-items-center rounded-full bg-emerald-50 text-xl text-emerald-700">
+            <CheckIcon className="size-6" />
+          </span>
+          <p className="text-[15px] font-semibold text-slate-800">
+            Өнөөдрийн ирц хаагдсан
+          </p>
+        </>
+      ) : (
+        <p className="text-[15px] text-slate-500">
+          Өнөөдрийн ирц авах хугацаа өнгөрсөн.
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -107,13 +213,19 @@ function LiveQr({
           <span className="text-sm text-slate-500">QR бэлдэж байна…</span>
         )}
         <span className="absolute inset-x-2 bottom-2 rounded-md bg-black/70 py-1 text-[13px] text-white opacity-0 transition group-hover:opacity-100">
-          ⛶ Томруулах
+          <span className="inline-flex items-center gap-1.5">
+            <ExpandIcon className="size-3.5" />
+            Томруулах
+          </span>
         </span>
       </button>
 
       <div className="w-full max-w-xs">
         <p className="text-[13px] font-bold tracking-widest text-emerald-700">
-          ● QR КОД ИДЭВХТЭЙ
+          <span className="inline-flex items-center gap-1.5">
+            <StatusDot pulse />
+            QR КОД ИДЭВХТЭЙ
+          </span>
         </p>
         <p className="mt-2 text-[15px] text-slate-700">
           Оюутнууд QR кодыг уншуулж, эсвэл доорх кодыг оруулж ирцээ бүртгүүлнэ.
@@ -139,7 +251,8 @@ function LiveQr({
           className={cx(primaryButtonClass, "mt-3 w-full")}
           onClick={() => setPresenting(true)}
         >
-          ⛶ Том дэлгэцээр харуулах
+          <ExpandIcon />
+          Том дэлгэцээр харуулах
         </button>
 
         {confirmingClose ? (

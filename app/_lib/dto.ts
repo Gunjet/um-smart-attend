@@ -19,6 +19,18 @@ export type TeacherCourse = {
   scheduledToday: boolean;
   /** Нээлттэй ирцийн session (байхгүй бол null). */
   openSessionId: string | null;
+  /** Архивласан хичээл (зөвхөн тайланд харагдана). */
+  archived: boolean;
+  /** Нээлттэй ирц хэддэх парынх. */
+  openPeriod: number | null;
+  /** Өнөөдөр хамгийн сүүлд хаасан ирц (эцсийн жагсаалтыг харуулна). */
+  closedTodaySessionId: string | null;
+  /** Өнөөдөр орох парууд, жишээ нь [1, 2]. */
+  todayPeriods: number[];
+  /** Өнөөдөр ирц нь авагдсан (нээлттэй эсвэл хаагдсан) парууд. */
+  takenPeriods: number[];
+  /** Дараа нь ирц авах пар. Бүгдийг нь авсан бол null. */
+  nextPeriod: number | null;
 };
 
 /** Оюутны бүртгэлтэй хичээл. */
@@ -36,6 +48,7 @@ export type StudentCourse = {
   checkedIn: boolean;
   attended: number;
   absent: number;
+  excused: number;
 };
 
 export type RosterEntry = {
@@ -69,6 +82,9 @@ export type AdminCourse = {
   teacherId: string | null;
   teacherName: string | null;
   studentIds: string[];
+  archived: boolean;
+  /** Ирцийн түүхтэй (устгавал архивлагдана). */
+  hasHistory: boolean;
 };
 
 export type ActionResult =

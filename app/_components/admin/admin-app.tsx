@@ -4,28 +4,36 @@ import { useState, useTransition } from "react";
 import { useNotice } from "../../_hooks/use-notice";
 import type { AdminUser } from "../../_lib/admin-types";
 import type { AdminCourse } from "../../_lib/dto";
-import type { CampusSettings } from "../../_lib/geo";
+import type { CampusSite } from "../../_lib/geo";
+import type { StatRow } from "../../_lib/stats";
 import type { SessionUser } from "../../_lib/types";
 import { logout } from "../../_server/auth/actions";
 import { AppShell, type NavItem } from "../app-shell";
-import { BookIcon, MapPinIcon, UsersIcon } from "../icons";
+import { BookIcon, ChartIcon, MapPinIcon, UsersIcon } from "../icons";
 import { AdminPanel } from "./admin-panel";
 import { CampusPanel } from "./campus-panel";
+import { OverviewPanel } from "./overview-panel";
 import { CoursesPanel } from "./courses-panel";
 
-type AdminView = "users" | "courses" | "campus";
+type AdminView = "overview" | "users" | "courses" | "campus";
 
 const ADMIN_NAV: NavItem<AdminView>[] = [
   {
+    id: "overview",
+    label: "Тойм",
+    shortLabel: "Тойм",
+    icon: <ChartIcon />,
+  },
+  {
     id: "users",
     label: "Хэрэглэгчид",
-    shortLabel: "Хэрэглэгчид",
+    shortLabel: "Хэрэглэгч",
     icon: <UsersIcon />,
   },
   {
     id: "courses",
     label: "Хичээлүүд",
-    shortLabel: "Хичээлүүд",
+    shortLabel: "Хичээл",
     icon: <BookIcon />,
   },
   {
@@ -40,15 +48,20 @@ export function AdminApp({
   user,
   users,
   courses,
-  campus,
+  sites,
+  stats,
+  today,
 }: {
   user: SessionUser;
   users: AdminUser[];
   courses: AdminCourse[];
-  campus: CampusSettings | null;
+  sites: CampusSite[];
+  stats: StatRow[];
+  /** Улаанбаатарын цагаар өнөөдөр, "YYYY-MM-DD". */
+  today: string;
 }) {
   const { notice, notify, dismissNotice } = useNotice();
-  const [view, setView] = useState<AdminView>("users");
+  const [view, setView] = useState<AdminView>("overview");
   const [, startTransition] = useTransition();
 
   return (
@@ -65,10 +78,12 @@ export function AdminApp({
       notice={notice}
       onDismissNotice={dismissNotice}
     >
-      {view === "courses" ? (
+      {view === "overview" ? (
+        <OverviewPanel stats={stats} today={today} />
+      ) : view === "courses" ? (
         <CoursesPanel courses={courses} users={users} notify={notify} />
       ) : view === "campus" ? (
-        <CampusPanel campus={campus} notify={notify} />
+        <CampusPanel sites={sites} notify={notify} />
       ) : (
         <AdminPanel users={users} currentUserId={user.id} notify={notify} />
       )}
