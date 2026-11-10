@@ -1,4 +1,15 @@
 export type Role = "teacher" | "student";
+export type UserRole = Role | "admin";
+
+/** Нэвтэрсэн хэрэглэгчийн клиент рүү дамжуулах мэдээлэл. */
+export type SessionUser = {
+  id: string;
+  role: UserRole;
+  name: string;
+  firstName: string;
+  initials: string;
+  studentCode: string | null;
+};
 
 export type AttendanceStatus = "Ирсэн" | "Тасалсан" | "Хүлээгдэж байна";
 

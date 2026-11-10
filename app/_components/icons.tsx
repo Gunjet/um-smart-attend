@@ -164,3 +164,128 @@ export function ArrowRightIcon({ className = "size-[18px]" }: IconProps) {
     </svg>
   );
 }
+
+export function SunIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="12" cy="12" r="4" />
+      <path
+        d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function MoonIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path
+        d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function UsersIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="9" cy="8.5" r="3.2" />
+      <path
+        d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M15.5 5.6a3 3 0 0 1 0 5.8M17.5 14.6c1.6.6 2.6 2 3 4.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function PlusIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function UploadIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path
+        d="M12 15V4m0 0-4 4m4-4 4 4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M4.5 14.5v3A2.5 2.5 0 0 0 7 20h10a2.5 2.5 0 0 0 2.5-2.5v-3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function PencilIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path
+        d="m4.5 19.5 1-4L15.8 5.2a2 2 0 0 1 2.9 0l.1.1a2 2 0 0 1 0 2.9L8.5 18.5l-4 1Z"
+        strokeLinejoin="round"
+      />
+      <path d="m14 7 3 3" />
+    </svg>
+  );
+}
+
+export function KeyIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="8" cy="15" r="4" />
+      <path
+        d="m11 12 8.5-8.5M16 7l2.5 2.5M18.5 4.5 20 6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function PhoneIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />
+      <path d="M10.5 18.5h3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function TrashIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path
+        d="M4.5 6.5h15M9.5 6.5V4.5h5v2M6.5 6.5l1 13h9l1-13M10 10.5v6M14 10.5v6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function CopyIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="8.5" y="8.5" width="11" height="11" rx="2" />
+      <path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5" />
+    </svg>
+  );
+}
+
+export function CloseIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="m6 6 12 12M18 6 6 18" strokeLinecap="round" />
+    </svg>
+  );
+}

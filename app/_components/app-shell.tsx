@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useNow } from "../_hooks/use-now";
 import { formatMongolianDate } from "../_lib/date";
 import { LogoutIcon } from "./icons";
+import { ThemeToggle } from "./theme-toggle";
 import { cx, Logo } from "./ui";
 
 export type NavItem<T extends string> = {
@@ -47,7 +48,7 @@ export function AppShell<T extends string>({
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-800">
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-slate-200 bg-white p-5 md:flex">
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-slate-200 bg-surface p-5 md:flex">
         <a
           className="mb-10 inline-flex items-center gap-3 px-2"
           href="#home"
@@ -95,7 +96,7 @@ export function AppShell<T extends string>({
         </div>
       </aside>
 
-      <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:ml-60 md:px-8">
+      <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-surface/95 px-4 backdrop-blur md:ml-60 md:px-8">
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <span>Нүүр</span>
           <span aria-hidden="true">/</span>
@@ -105,6 +106,7 @@ export function AppShell<T extends string>({
           <span className="hidden text-sm text-slate-500 sm:block">
             {now ? formatMongolianDate(now) : "Өнөөдөр"}
           </span>
+          <ThemeToggle />
           <span className="grid size-9 place-items-center rounded-full bg-emerald-100 text-[13px] font-semibold text-emerald-800">
             {account.initials}
           </span>
@@ -113,7 +115,7 @@ export function AppShell<T extends string>({
 
       {notice && (
         <div
-          className="fixed bottom-20 right-4 z-30 flex max-w-sm items-center gap-3 rounded-lg border border-emerald-200 bg-white p-3 text-[15px] shadow-lg md:bottom-6"
+          className="fixed bottom-20 right-4 z-30 flex max-w-sm items-center gap-3 rounded-lg border border-emerald-200 bg-surface p-3 text-[15px] shadow-lg md:bottom-6"
           role="status"
           aria-live="polite"
         >
@@ -134,7 +136,7 @@ export function AppShell<T extends string>({
       {children}
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-20 grid border-t border-slate-200 bg-white p-2 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 grid border-t border-slate-200 bg-surface p-2 md:hidden"
         style={{
           gridTemplateColumns: `repeat(${navItems.length + 1}, minmax(0, 1fr))`,
         }}

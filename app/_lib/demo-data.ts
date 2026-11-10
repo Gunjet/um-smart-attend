@@ -97,17 +97,6 @@ export type StudentProfile = {
   initials: string;
 };
 
-/** Оюутны кодоор профайл олно. Жагсаалтад байхгүй бол кодыг нь нэр болгоно. */
-export function findStudentProfile(code: string): StudentProfile {
-  const entry = ROSTER.find((item) => item.id === code);
-  if (!entry) {
-    return { code, name: code, firstName: code, initials: code.slice(-2) };
-  }
-  // "Б. Энхжин" → "Энхжин"
-  const firstName = entry.name.split(". ").pop() ?? entry.name;
-  return { code, name: entry.name, firstName, initials: entry.initials };
-}
-
 export function getCourseRoster(course: Course): Student[] {
   return ROSTER.slice(0, course.enrolled).map((entry) => ({
     ...entry,

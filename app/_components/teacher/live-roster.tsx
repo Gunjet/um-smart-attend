@@ -83,7 +83,7 @@ export function LiveRoster({
   });
 
   return (
-    <aside className="flex flex-col rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+    <aside className="flex flex-col rounded-xl border border-slate-200 bg-surface p-4 sm:p-5">
       <h3 className="text-lg font-semibold">Ирцийн явц</h3>
       <p className="mt-1 text-sm text-slate-500">
         {isLive ? "Өнөөдрийн бүртгэл · шууд" : "Өнөөдрийн бүртгэл · хаагдсан"}
@@ -156,10 +156,7 @@ export function LiveRoster({
               <strong className="block truncate text-[15px] font-medium">
                 {student.name}
               </strong>
-              <small className="text-[13px] text-slate-400">
-                {student.id}
-                {student.time !== "—" && ` · ${student.time}`}
-              </small>
+              <small className="text-[13px] text-slate-400">{student.id}</small>
             </span>
             {isLive ? (
               <div
@@ -176,7 +173,7 @@ export function LiveRoster({
                         "px-2 py-1 transition",
                         active
                           ? option.activeClass
-                          : "bg-white text-slate-600 hover:bg-slate-50",
+                          : "bg-surface text-slate-600 hover:bg-slate-50",
                       )}
                       aria-pressed={active}
                       onClick={() => onMark(student.id, option.status)}

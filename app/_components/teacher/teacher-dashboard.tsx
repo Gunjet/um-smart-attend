@@ -5,7 +5,7 @@ import type { Attendance } from "../../_hooks/use-attendance";
 import { useNow } from "../../_hooks/use-now";
 import { countStatuses } from "../../_lib/attendance";
 import { formatMongolianDate } from "../../_lib/date";
-import { ACADEMIC_YEAR, COURSES, CURRENT_TEACHER } from "../../_lib/demo-data";
+import { ACADEMIC_YEAR, COURSES } from "../../_lib/demo-data";
 import type { Notify } from "../../_lib/types";
 import { cx } from "../ui";
 import { CourseList } from "./course-list";
@@ -14,9 +14,11 @@ import { SessionPanel } from "./session-panel";
 
 export function TeacherDashboard({
   attendance,
+  teacherFirstName,
   notify,
 }: {
   attendance: Attendance;
+  teacherFirstName: string;
   notify: Notify;
 }) {
   const now = useNow();
@@ -55,9 +57,7 @@ export function TeacherDashboard({
           </p>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
             Сайн байна уу,{" "}
-            <span className="text-emerald-700">
-              {CURRENT_TEACHER.firstName}!
-            </span>
+            <span className="text-emerald-700">{teacherFirstName}!</span>
           </h1>
         </div>
       </div>

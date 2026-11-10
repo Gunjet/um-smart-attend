@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* data-theme="dark" үед dark: variant ажиллана. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
 	--color-emerald-50: #fff9df;
 	--color-emerald-100: #fff1b8;
@@ -12,6 +15,58 @@
 	--color-emerald-800: #14266c;
 	--color-emerald-900: #102052;
 	--color-emerald-950: #0a153b;
+
+	/* Карт, самбарын дэвсгэр. text-white-ийг өөрчлөхгүйн тулд bg-white-ийн оронд. */
+	--color-surface: #ffffff;
+}
+
+/*
+ * Dark mode: Tailwind-ийн utility бүр өнгөө эдгээр хувьсагчаас авдаг тул
+ * энд палитрыг сольход бүх компонент dark болно.
+ */
+[data-theme="dark"] {
+	color-scheme: dark;
+
+	--color-surface: #111111;
+
+	/* Саарал өнгийг хөх туяагүй, цэвэр хар-саарал болгоно. */
+	--color-slate-50: #000000;
+	--color-slate-100: #1c1c1c;
+	--color-slate-200: #2a2a2a;
+	--color-slate-300: #3d3d3d;
+	--color-slate-400: #737373;
+	--color-slate-500: #a3a3a3;
+	--color-slate-600: #bdbdbd;
+	--color-slate-700: #d4d4d4;
+	--color-slate-800: #e5e5e5;
+	--color-slate-900: #f5f5f5;
+
+	/* Брэнд: тодруулгын дэвсгэр саарал, текст/товч хөх, сонгогдсон хүрээ алтан шар. */
+	--color-emerald-50: #1f1f1f;
+	--color-emerald-100: #2a2a2a;
+	--color-emerald-200: #3a3a3a;
+	--color-emerald-300: #c9a227;
+	--color-emerald-600: #7b93f5;
+	--color-emerald-700: #4f6ae0;
+	--color-emerald-800: #a9b9ff;
+	--color-emerald-900: #d4ddff;
+
+	--color-rose-50: #2a1114;
+	--color-rose-100: #4c1620;
+	--color-rose-200: #6e2131;
+	--color-rose-300: #8f2a3f;
+	--color-rose-600: #e5485f;
+	--color-rose-700: #fb7185;
+	--color-rose-800: #fda4af;
+	--color-rose-900: #ffd1d8;
+
+	--color-amber-50: #2a2008;
+	--color-amber-700: #fbbf24;
+	--color-amber-800: #fcd34d;
+}
+
+html {
+	background: var(--color-surface);
 }
 
 @layer base {

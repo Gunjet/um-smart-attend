@@ -10,15 +10,16 @@ import type { AttendanceStatus } from "../_lib/types";
  *   жижиг шошго      text-[13px]  (үүнээс жижиг хэрэглэхгүй)
  */
 export const primaryButtonClass =
-  "inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300";
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 dark:hover:bg-emerald-700 dark:hover:brightness-110 disabled:cursor-not-allowed disabled:bg-slate-300";
 
 export const secondaryButtonClass =
-  "rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-emerald-300";
+  "rounded-lg border border-slate-200 bg-surface px-4 py-2 text-sm font-medium text-slate-700 hover:border-emerald-300";
 
 export function cx(...classes: (string | false | null | undefined)[]) {
   return classes.filter(Boolean).join(" ");
 }
 
+/** Цайвар горимд энгийн, харанхуй горимд цагаан бичигтэй (тунгалаг дэвсгэртэй) лого. */
 export function Logo({
   className,
   priority,
@@ -26,16 +27,28 @@ export function Logo({
   className?: string;
   priority?: boolean;
 }) {
+  const shared = {
+    unoptimized: true,
+    width: 738,
+    height: 129,
+    priority,
+  };
   return (
-    <Image
-      unoptimized
-      src="umtds-logo.png"
-      alt="Шинжлэх ухаан, технологийн их сургууль"
-      width={2255}
-      height={396}
-      priority={priority}
-      className={className}
-    />
+    <>
+      <Image
+        {...shared}
+        src="umtds-logo.png"
+        alt="Шинжлэх ухаан, технологийн их сургууль"
+        className={cx("dark:hidden", className)}
+      />
+      <Image
+        {...shared}
+        src="umtds-logo-dark.png"
+        alt=""
+        aria-hidden="true"
+        className={cx("hidden dark:block", className)}
+      />
+    </>
   );
 }
 

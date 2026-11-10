@@ -126,7 +126,7 @@ export function CheckInFlow({
       </div>
 
       {step === "scan" && (
-        <section className="rounded-xl border border-slate-200 bg-white p-4">
+        <section className="rounded-xl border border-slate-200 bg-surface p-4">
           <StepHeading
             number="01"
             title="QR код уншуулах"
@@ -185,7 +185,7 @@ export function CheckInFlow({
       )}
 
       {step === "verify" && (
-        <section className="rounded-xl border border-slate-200 bg-white p-4">
+        <section className="rounded-xl border border-slate-200 bg-surface p-4">
           <div className="mb-4 flex items-center gap-3 rounded-lg bg-emerald-50 p-3">
             <span className="grid size-7 place-items-center rounded-full bg-emerald-100 font-bold text-emerald-800">
               ✓
@@ -255,14 +255,14 @@ export function CheckInFlow({
                 autoPlay
                 playsInline
                 muted
-                className="mx-auto max-h-56 w-full rounded-lg bg-slate-900 object-cover"
+                className="mx-auto max-h-56 w-full rounded-lg bg-black object-cover"
               />
               {cameraError && (
                 <p className="my-2 text-sm text-rose-700">{cameraError}</p>
               )}
               <div className="mt-2 flex justify-end gap-2">
                 <button
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                  className="rounded-lg border border-slate-200 bg-surface px-3 py-2 text-sm"
                   onClick={() => {
                     resetCamera();
                     setFaceOk(true);

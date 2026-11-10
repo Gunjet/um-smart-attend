@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
-import type { Notify, Role } from "../_lib/types";
+import { useActionState, useState, type ReactNode } from "react";
+import { login } from "../_server/auth/actions";
+import type { Role } from "../_lib/types";
 import {
   ArrowRightIcon,
   EyeIcon,
@@ -9,10 +10,11 @@ import {
   StudentIcon,
   TeacherIcon,
 } from "./icons";
+import { ThemeToggle } from "./theme-toggle";
 import { cx, Logo } from "./ui";
 
 const fieldClass =
-  "w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100";
+  "w-full rounded-lg border border-slate-300 bg-surface px-3.5 py-2.5 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100";
 
 const ROLE_OPTIONS: { role: Role; label: string; icon: ReactNode }[] = [
   { role: "teacher", label: "Багш", icon: <TeacherIcon /> },
@@ -39,38 +41,21 @@ const ROLE_COPY: Record<
   },
 };
 
-export type Credentials = { role: Role; identifier: string };
-
-export function LoginScreen({
-  initialRole,
-  notice,
-  onDismissNotice,
-  notify,
-  onSignIn,
-}: {
-  initialRole: Role;
-  notice: string;
-  onDismissNotice: () => void;
-  notify: Notify;
-  onSignIn: (credentials: Credentials) => void;
-}) {
-  const [role, setRole] = useState<Role>(initialRole);
+export function LoginScreen() {
+  const [state, formAction, pending] = useActionState(login, null);
+  const [role, setRole] = useState<Role>("teacher");
+  // Алдаа гарахад React формыг цэвэрлэдэг тул нэвтрэх нэрийг state-д хадгална.
+  const [identifier, setIdentifier] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const copy = ROLE_COPY[role];
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    onSignIn({
-      role,
-      identifier: String(formData.get("identifier") ?? "").trim(),
-    });
-  };
+  const fieldErrors = state?.fieldErrors;
 
   return (
-    <main className="flex min-h-screen flex-col bg-white text-slate-800">
+    <main className="relative flex min-h-screen flex-col bg-surface text-slate-800">
+      <ThemeToggle className="absolute right-4 top-4" />
       <section className="flex flex-1 flex-col items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white px-6 py-8 sm:px-10 sm:py-10">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-surface px-6 py-8 sm:px-10 sm:py-10">
           <Logo priority className="mx-auto h-12 w-auto object-contain" />
 
           <h2 className="mt-8 text-center text-2xl font-bold sm:text-[28px] leading-tight tracking-tight text-emerald-700">
@@ -100,10 +85,13 @@ export function LoginScreen({
                   className={cx(
                     "flex items-center justify-center gap-2 rounded-lg py-2.5 text-[15px] font-medium transition",
                     active
-                      ? "bg-white text-emerald-800 shadow-sm ring-1 ring-slate-200"
+                      ? "bg-surface text-emerald-800 shadow-sm ring-1 ring-slate-200"
                       : "text-slate-500 hover:text-slate-800",
                   )}
-                  onClick={() => setRole(option.role)}
+                  onClick={() => {
+                    setRole(option.role);
+                    setIdentifier("");
+                  }}
                 >
                   {option.icon}
                   {option.label}
@@ -112,7 +100,8 @@ export function LoginScreen({
             })}
           </div>
 
-          <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
+          <form className="mt-6 space-y-5" action={formAction} noValidate>
+            <input type="hidden" name="role" value={role} />
             <div>
               <label
                 htmlFor="login-identifier"
@@ -121,13 +110,20 @@ export function LoginScreen({
                 {copy.idLabel}
               </label>
               <input
-                key={role}
                 className={fieldClass}
                 id="login-identifier"
                 name="identifier"
                 type={copy.idType}
                 autoComplete="username"
+                value={identifier}
+                onChange={(event) => setIdentifier(event.target.value)}
+                aria-invalid={Boolean(fieldErrors?.identifier)}
+                aria-describedby="login-identifier-error"
                 required
+              />
+              <FieldError
+                id="login-identifier-error"
+                message={fieldErrors?.identifier}
               />
             </div>
 
@@ -142,9 +138,8 @@ export function LoginScreen({
                 <button
                   className="text-[13px] font-medium text-emerald-700 hover:text-emerald-900"
                   type="button"
-                  onClick={() =>
-                    notify("Нууц үг сэргээх demo холбоос идэвхгүй байна.")
-                  }
+                  onClick={() => setShowHelp((value) => !value)}
+                  aria-expanded={showHelp}
                 >
                   Нууц үг мартсан уу?
                 </button>
@@ -156,6 +151,8 @@ export function LoginScreen({
                   name="password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
+                  aria-invalid={Boolean(fieldErrors?.password)}
+                  aria-describedby="login-password-error"
                   required
                 />
                 <button
@@ -170,34 +167,46 @@ export function LoginScreen({
                   {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
               </div>
+              <FieldError
+                id="login-password-error"
+                message={fieldErrors?.password}
+              />
+              {showHelp && (
+                <p className="mt-2 text-[13px] text-slate-500">
+                  Нууц үгээ сэргээхийн тулд сургуулийн админд хандана уу.
+                </p>
+              )}
             </div>
+
+            {state?.error && (
+              <p
+                className="rounded-lg border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-800"
+                role="alert"
+              >
+                {state.error}
+              </p>
+            )}
 
             <button
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-3 text-[15px] font-semibold text-white shadow-sm transition hover:bg-emerald-800"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-700 disabled:opacity-70 px-4 py-3 text-[15px] font-semibold text-white shadow-sm transition hover:bg-emerald-800 dark:hover:bg-emerald-700 dark:hover:brightness-110"
               type="submit"
+              disabled={pending}
             >
-              {copy.submit}
-              <ArrowRightIcon />
+              {pending ? "Нэвтэрч байна…" : copy.submit}
+              {!pending && <ArrowRightIcon />}
             </button>
           </form>
-
-          {notice && (
-            <div
-              className="mt-4 flex items-start justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
-              role="status"
-            >
-              {notice}
-              <button
-                className="text-slate-400 hover:text-slate-700"
-                onClick={onDismissNotice}
-                aria-label="Мэдэгдэл хаах"
-              >
-                ✕
-              </button>
-            </div>
-          )}
         </div>
       </section>
     </main>
+  );
+}
+
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p id={id} className="mt-1.5 text-[13px] text-rose-700">
+      {message}
+    </p>
   );
 }

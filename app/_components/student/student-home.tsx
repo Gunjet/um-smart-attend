@@ -38,7 +38,7 @@ export function StudentHome({
         >
           <Logo className="h-8 w-auto max-w-48 object-contain" />
         </a>
-        <span className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[13px] text-slate-500">
+        <span className="rounded-md border border-slate-200 bg-surface px-2 py-1 text-[13px] text-slate-500">
           {course.code}
         </span>
       </div>
@@ -48,7 +48,7 @@ export function StudentHome({
         <span className="text-emerald-700">{student.firstName}!</span>
       </h1>
 
-      <section className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
+      <section className="mt-5 rounded-xl border border-slate-200 bg-surface p-4">
         <span
           className={cx(
             "rounded-full px-3 py-1 text-sm font-medium",
@@ -71,7 +71,7 @@ export function StudentHome({
 
       <div className="mt-7">
         {registered ? (
-          <section className="rounded-xl border border-emerald-200 bg-white p-6 text-center">
+          <section className="rounded-xl border border-emerald-200 bg-surface p-6 text-center">
             <span
               className="mx-auto grid size-14 place-items-center rounded-full bg-emerald-50 text-2xl text-emerald-700"
               aria-hidden="true"
@@ -80,8 +80,7 @@ export function StudentHome({
             </span>
             <h2 className="mt-3 text-xl font-semibold">Ирц бүртгэгдлээ!</h2>
             <p className="mt-1 text-[15px] text-slate-500">
-              {course.title} хичээлд {registered.time} цагт «{registered.status}
-              » гэж бүртгэгдсэн.
+              {course.title} хичээлийн ирцэд бүртгэгдсэн.
             </p>
           </section>
         ) : (

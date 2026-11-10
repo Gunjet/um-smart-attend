@@ -37,7 +37,7 @@ export function AttendanceOverview() {
         {SUMMARY.map((item) => (
           <article
             key={item.label}
-            className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"
+            className="rounded-2xl border border-slate-200 bg-surface p-4 sm:p-5"
           >
             <span
               className={cx(
@@ -57,7 +57,7 @@ export function AttendanceOverview() {
         ))}
       </div>
 
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
+      <section className="mb-6 rounded-2xl border border-slate-200 bg-surface p-4 sm:p-6">
         <h2 className="text-xl font-bold tracking-tight text-slate-900">
           Хичээл тус бүрийн ирц
         </h2>

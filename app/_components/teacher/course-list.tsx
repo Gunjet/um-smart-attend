@@ -57,7 +57,7 @@ export function CourseList({
           <button
             key={course.code}
             className={cx(
-              "grid w-full grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border bg-white p-3 text-left transition sm:grid-cols-[36px_minmax(0,1fr)_120px_70px_170px_16px] sm:gap-4 sm:px-4",
+              "grid w-full grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border bg-surface p-3 text-left transition sm:grid-cols-[36px_minmax(0,1fr)_120px_70px_170px_16px] sm:gap-4 sm:px-4",
               isSelected
                 ? "border-emerald-300 shadow-sm ring-1 ring-emerald-200"
                 : "border-slate-200 hover:border-emerald-200",

@@ -27,7 +27,7 @@ export function SessionPanel({
   const countdown = `00:${String(secondsLeft).padStart(2, "0")}`;
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+    <section className="rounded-xl border border-slate-200 bg-surface p-4 sm:p-5">
       <p className="text-[13px] font-bold tracking-widest text-slate-400">
         {session ? "ИДЭВХТЭЙ ХИЧЭЭЛ" : "СОНГОСОН ХИЧЭЭЛ"}
       </p>
@@ -42,7 +42,7 @@ export function SessionPanel({
       {session ? (
         <div className="flex flex-col items-center gap-5 py-2 sm:flex-row sm:items-start sm:justify-center">
           <button
-            className="group relative grid size-56 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white p-2"
+            className="group relative grid size-56 shrink-0 place-items-center rounded-xl border border-slate-200 bg-surface p-2"
             onClick={() => setPresenting(true)}
             aria-label="QR кодыг том дэлгэцээр харуулах"
           >
@@ -58,7 +58,7 @@ export function SessionPanel({
             ) : (
               <span className="text-sm text-slate-500">QR бэлдэж байна…</span>
             )}
-            <span className="absolute inset-x-2 bottom-2 rounded-md bg-slate-900/75 py-1 text-[13px] text-white opacity-0 transition group-hover:opacity-100">
+            <span className="absolute inset-x-2 bottom-2 rounded-md bg-black/70 py-1 text-[13px] text-white opacity-0 transition group-hover:opacity-100">
               ⛶ Томруулах
             </span>
           </button>
@@ -96,7 +96,7 @@ export function SessionPanel({
                 </p>
                 <div className="mt-3 flex gap-2">
                   <button
-                    className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700"
+                    className="flex-1 rounded-lg border border-slate-200 bg-surface px-3 py-2 text-sm font-medium text-slate-700"
                     onClick={() => setConfirmingClose(false)}
                   >
                     Болих
@@ -114,7 +114,7 @@ export function SessionPanel({
               </div>
             ) : (
               <button
-                className="mt-2 w-full rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+                className="mt-2 w-full rounded-lg border border-rose-200 bg-surface px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
                 onClick={() => setConfirmingClose(true)}
               >
                 Ирцийн бүртгэл хаах
@@ -167,7 +167,7 @@ function PresentationOverlay({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-white p-6"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-surface p-6"
       role="dialog"
       aria-modal="true"
       aria-label="QR код том дэлгэцээр"

@@ -10,8 +10,6 @@ export const STATUS = {
 export const QR_ROTATION_MS = 30_000;
 export const QR_PREFIX = "UM-SMART-ATTEND";
 
-export const DEVICE_STORAGE_PREFIX = "um-smart-attend-device";
-
 export const STATUS_TEXT_CLASS: Record<AttendanceStatus, string> = {
   Ирсэн: "text-emerald-700",
   Тасалсан: "text-rose-700",

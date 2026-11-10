@@ -58,7 +58,7 @@ export function TeacherReport({
       "shrink-0 rounded-lg border px-4 py-2.5 text-[15px] font-medium transition",
       active
         ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-        : "border-slate-200 bg-white text-slate-600 hover:border-emerald-200",
+        : "border-slate-200 bg-surface text-slate-600 hover:border-emerald-200",
     );
 
   return (
@@ -80,7 +80,7 @@ export function TeacherReport({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+            className="rounded-lg border border-slate-200 bg-surface px-3 py-2 text-sm text-slate-700"
             aria-label="Сар сонгох"
             value={month}
             onChange={(event) => setPickedMonth(event.target.value)}
@@ -92,7 +92,7 @@ export function TeacherReport({
             ))}
           </select>
           <button
-            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-emerald-300 disabled:opacity-50"
+            className="rounded-lg border border-slate-200 bg-surface px-4 py-2 text-sm font-medium text-slate-700 hover:border-emerald-300 disabled:opacity-50"
             disabled={!month || !report}
             onClick={() =>
               report &&
@@ -149,7 +149,7 @@ function CourseDetail({
   );
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white">
+    <section className="rounded-xl border border-slate-200 bg-surface">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">
@@ -184,7 +184,7 @@ function CourseDetail({
               <tr className="text-slate-500">
                 <th
                   scope="col"
-                  className="sticky left-0 top-0 z-[3] min-w-60 border-b border-slate-200 bg-white px-5 py-3 text-left font-medium"
+                  className="sticky left-0 top-0 z-[3] min-w-60 border-b border-slate-200 bg-surface px-5 py-3 text-left font-medium"
                 >
                   Оюутан
                 </th>
@@ -194,7 +194,7 @@ function CourseDetail({
                     <th
                       key={date}
                       scope="col"
-                      className="sticky top-0 z-[2] border-b border-slate-200 bg-white px-2 py-3 text-center font-medium"
+                      className="sticky top-0 z-[2] border-b border-slate-200 bg-surface px-2 py-3 text-center font-medium"
                     >
                       <span className="block text-[15px] text-slate-700">
                         {day}
@@ -212,7 +212,7 @@ function CourseDetail({
                 <tr key={row.student.id} className="hover:bg-slate-50">
                   <th
                     scope="row"
-                    className="sticky left-0 z-[1] border-b border-slate-100 bg-white px-5 py-3 text-left font-normal"
+                    className="sticky left-0 z-[1] border-b border-slate-100 bg-surface px-5 py-3 text-left font-normal"
                   >
                     <strong className="block truncate text-[15px] font-medium text-slate-800">
                       {row.student.name}
