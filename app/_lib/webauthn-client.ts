@@ -3,7 +3,7 @@ export function describeWebAuthnError(error: unknown, registering = false) {
   const name = (error as { name?: string })?.name;
   if (name === "NotAllowedError" || name === "AbortError") {
     return registering
-      ? "Бүртгэл цуцлагдлаа. Дахин оролдоно уу."
+      ? "Бүртгэл цуцлагдлаа. iPhone дээр Тохиргоо → General → AutoFill & Passwords асаалттай эсэхийг шалгаад дахин оролдоно уу."
       : "Баталгаажуулалт цуцлагдлаа. Хэрэв энэ утас таны Face ID бүртгүүлсэн утас биш бол бүртгүүлсэн утаснаасаа оролдоно уу.";
   }
   if (name === "InvalidStateError" && registering) {

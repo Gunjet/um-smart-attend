@@ -4,7 +4,12 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import * as z from "zod";
-import type { ActionResult, RosterEntry, SessionQr } from "../../_lib/dto";
+import type {
+  ActionResult,
+  CheckInResult,
+  RosterEntry,
+  SessionQr,
+} from "../../_lib/dto";
 import {
   type DeviceLocation,
   distanceMeters,
@@ -174,13 +179,7 @@ export async function markAttendance(
       .values({ sessionId, studentId, status, markedBy: teacher.id })
       .onConflictDoUpdate({
         target: [attendanceRecords.sessionId, attendanceRecords.studentId],
-        // Багш шийдвэр гаргасан тул байршлын анхааруулгыг арилгана.
-        set: {
-          status,
-          markedBy: teacher.id,
-          locationOk: null,
-          updatedAt: new Date(),
-        },
+        set: { status, markedBy: teacher.id, updatedAt: new Date() },
       });
   } catch (error) {
     console.error("markAttendance failed", error);
@@ -204,13 +203,13 @@ const LOCATION_REQUIRED =
  * QR кодын текст эсвэл 6 оронтой кодоор ирц бүртгүүлнэ.
  * Face ID / хурууны хээгээр баталгаажуулах шаардлагатай.
  * Сургуулийн байршил тохируулсан бол оюутны байршлыг шалгаж,
- * радиусаас гадна байвал бүртгээд багшид анхааруулга харуулна.
+ * радиусаас гадна байвал бүртгэхгүй.
  */
 export async function checkIn(
   input: string,
   location: DeviceLocation | null,
   passkey: AuthenticationResponseJSON | null,
-): Promise<ActionResult> {
+): Promise<CheckInResult> {
   const student = await requireRole("student");
   if (!student) return { ok: false, error: "Ирцийг зөвхөн оюутан бүртгүүлнэ." };
 
@@ -221,23 +220,32 @@ export async function checkIn(
   try {
     // Оюутан өөрийн утсаараа, өөрийн царай/хурууны хээгээр бүртгүүлж буйг шалгана.
     const passkeyError = await verifyCheckInPasskey(student.id, passkey);
-    if (passkeyError) return { ok: false, error: passkeyError };
+    if (passkeyError)
+      return { ok: false, error: passkeyError, step: "passkey" };
 
+    // Сургуулийн байранд байгаа эсэх (тохируулсан бол заавал).
     const campus = await getCampusLocation();
     let distanceM: number | null = null;
-    let locationOk: boolean | null = null;
     if (campus) {
       const parsedLocation = LocationSchema.safeParse(location);
-      if (!parsedLocation.success)
-        return { ok: false, error: LOCATION_REQUIRED };
+      if (!parsedLocation.success) {
+        return { ok: false, error: LOCATION_REQUIRED, step: "location" };
+      }
       const distance = distanceMeters(campus, parsedLocation.data);
       const tolerance = Math.min(
         parsedLocation.data.accuracy,
         MAX_ACCURACY_TOLERANCE_M,
       );
       distanceM = Math.round(distance);
-      locationOk = distance - tolerance <= campus.radiusM;
+      if (distance - tolerance > campus.radiusM) {
+        return {
+          ok: false,
+          step: "location",
+          error: `Та сургуулиас ${formatDistance(distance)} зайтай байна. Ирцээ сургууль дээрээ бүртгүүлнэ үү.`,
+        };
+      }
     }
+    const locationOk = campus ? true : null;
 
     // Оюутны бүртгэлтэй хичээлүүдийн нээлттэй session-ууд.
     const openSessions = await db
@@ -265,17 +273,23 @@ export async function checkIn(
       if (!session) {
         return {
           ok: false,
+          step: "code",
           error: "Код буруу эсвэл хугацаа нь дууссан байна.",
         };
       }
     } else {
       const parsed = parseQrPayload(value);
       if (!parsed)
-        return { ok: false, error: "Энэ QR код ирцийн код биш байна." };
+        return {
+          ok: false,
+          step: "code",
+          error: "Энэ QR код ирцийн код биш байна.",
+        };
       session = openSessions.find((item) => item.id === parsed.sessionId);
       if (!session) {
         return {
           ok: false,
+          step: "code",
           error:
             "Энэ хичээлийн ирц хаагдсан эсвэл та энэ хичээлд бүртгэлгүй байна.",
         };
@@ -283,6 +297,7 @@ export async function checkIn(
       if (!verifyQrPayload(session.qrSecret, parsed, now)) {
         return {
           ok: false,
+          step: "code",
           error:
             "QR кодын хугацаа дууссан байна. Дэлгэц дээрх шинэ кодыг уншуулна уу.",
         };
@@ -311,13 +326,9 @@ export async function checkIn(
       });
 
     refresh();
-    const message = `${session.courseTitle} хичээлийн ирцэд бүртгэгдлээ.`;
     return {
       ok: true,
-      message:
-        locationOk === false && distanceM !== null
-          ? `${message} Таны байршил сургуулиас ${formatDistance(distanceM)} зайтай байгаа тул багшид мэдэгдлээ.`
-          : message,
+      message: `${session.courseTitle} хичээлийн ирцэд бүртгэгдлээ.`,
     };
   } catch (error) {
     console.error("checkIn failed", error);

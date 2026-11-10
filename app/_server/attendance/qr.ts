@@ -39,11 +39,16 @@ export function parseQrPayload(text: string) {
   return { sessionId, tick: Number(tick), sig };
 }
 
+/** Дэлгэцээс алга болсноос хойш хэдэн цонх хүчинтэй байх. */
+const GRACE_TICKS = 2;
+
 /**
- * Одоогийн эсвэл өмнөх 30 секундын цонхных бол хүчинтэй
- * (уншуулах, сүлжээний хоцрогдолд зай үлдээнэ).
+ * Одоогийн болон өмнөх 2 цонхных (≈60–90 секунд) бол хүчинтэй.
+ * QR уншсаны дараа Face ID, байршил (барилга дотор GPS удааширдаг)
+ * шалгах хугацаанд код хүчингүй болохгүй байхын тулд.
  */
-export const acceptedTicks = (now: number) => [tickAt(now), tickAt(now) - 1];
+export const acceptedTicks = (now: number) =>
+  Array.from({ length: GRACE_TICKS + 1 }, (_, index) => tickAt(now) - index);
 
 export function verifyQrPayload(
   secret: string,

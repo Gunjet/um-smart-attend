@@ -44,10 +44,6 @@ export type RosterEntry = {
   name: string;
   initials: string;
   status: AttendanceStatus;
-  /** Бүртгүүлэх үеийн сургуулиас хүртэлх зай (м). */
-  distanceM: number | null;
-  /** false бол радиусаас гадна бүртгүүлсэн (багшид анхааруулга). */
-  locationOk: boolean | null;
 };
 
 export type SessionQr = {
@@ -77,3 +73,10 @@ export type AdminCourse = {
 
 export type ActionResult =
   { ok: true; message?: string } | { ok: false; error: string };
+
+/** Ирц бүртгүүлэх алхмууд: код (QR / 6 оронтой) → Face ID → байршил. */
+export type CheckInStep = "code" | "passkey" | "location";
+
+export type CheckInResult =
+  | { ok: true; message?: string }
+  | { ok: false; error: string; step?: CheckInStep };

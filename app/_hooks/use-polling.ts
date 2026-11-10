@@ -27,7 +27,6 @@ export function usePolling<T>(
         const next = await fetcherRef.current();
         if (!cancelled) setData(next);
       } catch {
-        /* дараагийн удаа дахин оролдоно */
       }
       if (!cancelled && enabled) timer = setTimeout(tick, intervalMs);
     };
