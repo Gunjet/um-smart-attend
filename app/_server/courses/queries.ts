@@ -135,6 +135,8 @@ export async function getSessionRoster(
       code: users.studentCode,
       name: users.fullName,
       status: attendanceRecords.status,
+      distanceM: attendanceRecords.distanceM,
+      locationOk: attendanceRecords.locationOk,
     })
     .from(attendanceSessions)
     .innerJoin(
@@ -158,6 +160,8 @@ export async function getSessionRoster(
     name: row.name,
     initials: nameParts(row.name).initials,
     status: row.status ? STATUS_LABEL[row.status] : "Хүлээгдэж байна",
+    distanceM: row.distanceM,
+    locationOk: row.locationOk,
   }));
 }
 

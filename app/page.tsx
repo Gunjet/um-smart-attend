@@ -4,6 +4,7 @@ import { StudentApp, TeacherApp } from "./_components/attendance-app";
 import { LoginScreen } from "./_components/login-screen";
 import { listUsersForAdmin } from "./_server/admin/users";
 import { getCurrentUser } from "./_server/auth/dal";
+import { getCampusLocation } from "./_server/settings/campus";
 import {
   getStudentCourses,
   getTeacherCourses,
@@ -25,11 +26,14 @@ async function AuthGate() {
   if (!user) return <LoginScreen />;
 
   if (user.role === "admin") {
-    const [users, courses] = await Promise.all([
+    const [users, courses, campus] = await Promise.all([
       listUsersForAdmin(),
       listCoursesForAdmin(),
+      getCampusLocation(),
     ]);
-    return <AdminApp user={user} users={users} courses={courses} />;
+    return (
+      <AdminApp user={user} users={users} courses={courses} campus={campus} />
+    );
   }
 
   if (user.role === "teacher") {
@@ -40,5 +44,15 @@ async function AuthGate() {
     return <TeacherApp user={user} courses={courses} records={records} />;
   }
 
-  return <StudentApp user={user} courses={await getStudentCourses(user.id)} />;
+  const [courses, campus] = await Promise.all([
+    getStudentCourses(user.id),
+    getCampusLocation(),
+  ]);
+  return (
+    <StudentApp
+      user={user}
+      courses={courses}
+      locationRequired={campus !== null}
+    />
+  );
 }

@@ -38,9 +38,10 @@ export function Dialog({
         if (event.target === ref.current) onClose();
       }}
       aria-labelledby="dialog-title"
-      className="m-auto max-h-[90dvh] w-[min(92vw,30rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-surface p-0 text-slate-800 shadow-xl backdrop:bg-black/50"
+      // Гар утсанд доороос гарч ирэх бүтэн өргөнтэй sheet, том дэлгэцэнд голдоо.
+      className="mx-0 mt-auto mb-0 max-h-[92dvh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-2xl border border-slate-200 bg-surface p-0 text-slate-800 shadow-xl backdrop:bg-black/50 sm:m-auto sm:max-h-[90dvh] sm:w-[min(92vw,30rem)] sm:rounded-2xl"
     >
-      <div className="p-6">
+      <div className="px-4 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <h2
@@ -55,7 +56,7 @@ export function Dialog({
           </div>
           <button
             type="button"
-            className="grid size-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            className="grid size-8 shrink-0 place-items-center rounded-lg text-slate-400 outline-none hover:bg-slate-100 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-emerald-300"
             onClick={onClose}
             aria-label="Хаах"
           >

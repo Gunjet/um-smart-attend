@@ -8,10 +8,12 @@ import { CheckInFlow } from "./check-in-flow";
 export function StudentHome({
   firstName,
   courses,
+  locationRequired,
   notify,
 }: {
   firstName: string;
   courses: StudentCourse[];
+  locationRequired: boolean;
   notify: Notify;
 }) {
   const openCourses = courses.filter((course) => course.openSessionId);
@@ -44,7 +46,11 @@ export function StudentHome({
         </section>
       ))}
 
-      <CheckInFlow openCourse={awaiting} notify={notify} />
+      <CheckInFlow
+        openCourse={awaiting}
+        locationRequired={locationRequired}
+        notify={notify}
+      />
 
       <AttendanceOverview courses={courses} />
     </div>

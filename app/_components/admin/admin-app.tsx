@@ -4,14 +4,16 @@ import { useState, useTransition } from "react";
 import { useNotice } from "../../_hooks/use-notice";
 import type { AdminUser } from "../../_lib/admin-types";
 import type { AdminCourse } from "../../_lib/dto";
+import type { CampusSettings } from "../../_lib/geo";
 import type { SessionUser } from "../../_lib/types";
 import { logout } from "../../_server/auth/actions";
 import { AppShell, type NavItem } from "../app-shell";
-import { BookIcon, UsersIcon } from "../icons";
+import { BookIcon, MapPinIcon, UsersIcon } from "../icons";
 import { AdminPanel } from "./admin-panel";
+import { CampusPanel } from "./campus-panel";
 import { CoursesPanel } from "./courses-panel";
 
-type AdminView = "users" | "courses";
+type AdminView = "users" | "courses" | "campus";
 
 const ADMIN_NAV: NavItem<AdminView>[] = [
   {
@@ -26,16 +28,24 @@ const ADMIN_NAV: NavItem<AdminView>[] = [
     shortLabel: "Хичээлүүд",
     icon: <BookIcon />,
   },
+  {
+    id: "campus",
+    label: "Байршил",
+    shortLabel: "Байршил",
+    icon: <MapPinIcon />,
+  },
 ];
 
 export function AdminApp({
   user,
   users,
   courses,
+  campus,
 }: {
   user: SessionUser;
   users: AdminUser[];
   courses: AdminCourse[];
+  campus: CampusSettings | null;
 }) {
   const { notice, notify, dismissNotice } = useNotice();
   const [view, setView] = useState<AdminView>("users");
@@ -57,6 +67,8 @@ export function AdminApp({
     >
       {view === "courses" ? (
         <CoursesPanel courses={courses} users={users} notify={notify} />
+      ) : view === "campus" ? (
+        <CampusPanel campus={campus} notify={notify} />
       ) : (
         <AdminPanel users={users} currentUserId={user.id} notify={notify} />
       )}

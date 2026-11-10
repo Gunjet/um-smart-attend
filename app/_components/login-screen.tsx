@@ -10,6 +10,7 @@ import {
   StudentIcon,
   TeacherIcon,
 } from "./icons";
+import { InAppBrowserNotice } from "./in-app-browser-notice";
 import { ThemeToggle } from "./theme-toggle";
 import { cx, Logo } from "./ui";
 
@@ -68,6 +69,8 @@ export function LoginScreen() {
           <p className="mt-3 text-center text-[15px] text-slate-500">
             Эрхээ сонгоод нэвтэрнэ үү.
           </p>
+
+          <InAppBrowserNotice />
 
           <div
             className="mt-7 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1"

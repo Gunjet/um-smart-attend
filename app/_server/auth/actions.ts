@@ -1,8 +1,10 @@
 "use server";
 
 import { and, eq, inArray } from "drizzle-orm";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import * as z from "zod";
+import { detectInAppBrowser } from "../../_lib/in-app-browser";
 import { getDb, schema } from "../db";
 import { getDeviceIdHash } from "./device";
 import { verifyPasswordOrDummy } from "./password";
@@ -81,6 +83,11 @@ async function authenticate({
 
   // Оюутан зөвхөн анх нэвтэрсэн төхөөрөмжөөсөө нэвтэрнэ.
   if (user.role === "student") {
+    // Апп доторх хөтөч cookie-г мартдаг тул бүртгэлийг тэнд холбохгүй.
+    const app = detectInAppBrowser((await headers()).get("user-agent") ?? "");
+    if (app) {
+      return `${app} доторх хөтчөөс нэвтрэх боломжгүй. Линкийг Safari эсвэл Chrome-оор нээнэ үү.`;
+    }
     const deviceHash = await getDeviceIdHash();
     if (user.deviceIdHash && user.deviceIdHash !== deviceHash) {
       return "Энэ бүртгэл өөр төхөөрөмжид холбогдсон байна. Утсаа сольсон бол багш эсвэл админд хандана уу.";

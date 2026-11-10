@@ -44,6 +44,10 @@ export type RosterEntry = {
   name: string;
   initials: string;
   status: AttendanceStatus;
+  /** Бүртгүүлэх үеийн сургуулиас хүртэлх зай (м). */
+  distanceM: number | null;
+  /** false бол радиусаас гадна бүртгүүлсэн (багшид анхааруулга). */
+  locationOk: boolean | null;
 };
 
 export type SessionQr = {

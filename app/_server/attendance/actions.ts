@@ -3,7 +3,14 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
+import * as z from "zod";
 import type { ActionResult, RosterEntry, SessionQr } from "../../_lib/dto";
+import {
+  type DeviceLocation,
+  distanceMeters,
+  formatDistance,
+  MAX_ACCURACY_TOLERANCE_M,
+} from "../../_lib/geo";
 import { getCurrentUser } from "../auth/dal";
 import {
   findTeacherSession,
@@ -11,6 +18,7 @@ import {
   scheduledTodaySql,
 } from "../courses/queries";
 import { getDb, schema } from "../db";
+import { getCampusLocation } from "../settings/campus";
 import {
   matchesShortCode,
   newQrSecret,
@@ -164,7 +172,13 @@ export async function markAttendance(
       .values({ sessionId, studentId, status, markedBy: teacher.id })
       .onConflictDoUpdate({
         target: [attendanceRecords.sessionId, attendanceRecords.studentId],
-        set: { status, markedBy: teacher.id, updatedAt: new Date() },
+        // Багш шийдвэр гаргасан тул байршлын анхааруулгыг арилгана.
+        set: {
+          status,
+          markedBy: teacher.id,
+          locationOk: null,
+          updatedAt: new Date(),
+        },
       });
   } catch (error) {
     console.error("markAttendance failed", error);
@@ -175,8 +189,24 @@ export async function markAttendance(
 
 /* -------------------------------- Оюутан -------------------------------- */
 
-/** QR кодын текст эсвэл 6 оронтой кодоор ирц бүртгүүлнэ. */
-export async function checkIn(input: string): Promise<ActionResult> {
+const LocationSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  accuracy: z.number().min(0).max(100_000),
+});
+
+const LOCATION_REQUIRED =
+  "Ирц бүртгүүлэхийн тулд байршлаа зөвшөөрнө үү. Утасныхаа тохиргооноос энэ сайтад байршил ашиглахыг зөвшөөрөөд дахин оролдоно уу.";
+
+/**
+ * QR кодын текст эсвэл 6 оронтой кодоор ирц бүртгүүлнэ.
+ * Сургуулийн байршил тохируулсан бол оюутны байршлыг шалгаж,
+ * радиусаас гадна байвал бүртгээд багшид анхааруулга харуулна.
+ */
+export async function checkIn(
+  input: string,
+  location: DeviceLocation | null = null,
+): Promise<ActionResult> {
   const student = await requireRole("student");
   if (!student) return { ok: false, error: "Ирцийг зөвхөн оюутан бүртгүүлнэ." };
 
@@ -185,6 +215,22 @@ export async function checkIn(input: string): Promise<ActionResult> {
   const db = getDb();
 
   try {
+    const campus = await getCampusLocation();
+    let distanceM: number | null = null;
+    let locationOk: boolean | null = null;
+    if (campus) {
+      const parsedLocation = LocationSchema.safeParse(location);
+      if (!parsedLocation.success)
+        return { ok: false, error: LOCATION_REQUIRED };
+      const distance = distanceMeters(campus, parsedLocation.data);
+      const tolerance = Math.min(
+        parsedLocation.data.accuracy,
+        MAX_ACCURACY_TOLERANCE_M,
+      );
+      distanceM = Math.round(distance);
+      locationOk = distance - tolerance <= campus.radiusM;
+    }
+
     // Оюутны бүртгэлтэй хичээлүүдийн нээлттэй session-ууд.
     const openSessions = await db
       .select({
@@ -242,20 +288,28 @@ export async function checkIn(input: string): Promise<ActionResult> {
         studentId: student.id,
         status: "present",
         checkedInAt: new Date(),
+        distanceM,
+        locationOk,
       })
       .onConflictDoUpdate({
         target: [attendanceRecords.sessionId, attendanceRecords.studentId],
         set: {
           status: "present",
           checkedInAt: sql`coalesce(${attendanceRecords.checkedInAt}, now())`,
+          distanceM,
+          locationOk,
           updatedAt: new Date(),
         },
       });
 
     refresh();
+    const message = `${session.courseTitle} хичээлийн ирцэд бүртгэгдлээ.`;
     return {
       ok: true,
-      message: `${session.courseTitle} хичээлийн ирцэд бүртгэгдлээ.`,
+      message:
+        locationOk === false && distanceM !== null
+          ? `${message} Таны байршил сургуулиас ${formatDistance(distanceM)} зайтай байгаа тул багшид мэдэгдлээ.`
+          : message,
     };
   } catch (error) {
     console.error("checkIn failed", error);

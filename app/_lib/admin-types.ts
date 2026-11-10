@@ -36,6 +36,7 @@ export type AdminActionState = {
       string
     >
   >;
+  campusErrors?: Partial<Record<"latitude" | "longitude" | "radiusM", string>>;
   /** Автоматаар үүсгэсэн нууц үг — зөвхөн нэг удаа харуулна. */
   generatedPassword?: string;
 } | null;

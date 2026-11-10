@@ -2,23 +2,28 @@
 
 import { useCallback, useState, useTransition } from "react";
 import { useQrScanner } from "../../_hooks/use-qr-scanner";
+import { LocationError, requestLocation } from "../../_lib/device-location";
 import type { StudentCourse } from "../../_lib/dto";
 import type { Notify } from "../../_lib/types";
 import { checkIn } from "../../_server/attendance/actions";
+import { MapPinIcon } from "../icons";
 import { cx, primaryButtonClass } from "../ui";
 
 const SCANNER_ELEMENT_ID = "student-qr-reader";
 
 /**
  * QR уншуулах эсвэл багшийн дэлгэц дээрх 6 оронтой кодыг оруулж ирц бүртгүүлнэ.
- * (Байршил, зургийн шалгалтыг түр алгассан.)
+ * Сургуулийн байршил тохируулсан бол утасны байршлыг хамт илгээнэ.
  */
 export function CheckInFlow({
   openCourse,
+  locationRequired,
   notify,
 }: {
   /** Ирц нь нээлттэй, хараахан бүртгүүлээгүй хичээл (байхгүй бол null). */
   openCourse: StudentCourse | null;
+  /** Сургуулийн байршил тохируулсан эсэх. */
+  locationRequired: boolean;
   notify: Notify;
 }) {
   const [error, setError] = useState("");
@@ -29,7 +34,20 @@ export function CheckInFlow({
     (value: string) =>
       startTransition(async () => {
         setError("");
-        const result = await checkIn(value);
+        let location = null;
+        if (locationRequired) {
+          try {
+            location = await requestLocation();
+          } catch (cause) {
+            setError(
+              cause instanceof LocationError
+                ? cause.message
+                : "Байршил авч чадсангүй.",
+            );
+            return;
+          }
+        }
+        const result = await checkIn(value, location);
         if (result.ok) {
           setCode("");
           notify(result.message ?? "Ирц бүртгэгдлээ.");
@@ -37,8 +55,13 @@ export function CheckInFlow({
           setError(result.error);
         }
       }),
-    [notify],
+    [locationRequired, notify],
   );
+
+  // Байршлыг урьдчилан авч эхэлбэл бүртгэл хурдан болно.
+  const prefetchLocation = () => {
+    if (locationRequired) requestLocation().catch(() => {});
+  };
 
   const scanner = useQrScanner(
     SCANNER_ELEMENT_ID,
@@ -59,6 +82,12 @@ export function CheckInFlow({
           ? `${openCourse.title} хичээлийн ирц нээлттэй байна.`
           : "Багшийн дэлгэц дээрх QR кодыг уншуулна уу."}
       </p>
+      {locationRequired && (
+        <p className="mt-1 flex items-center gap-1.5 text-[13px] text-slate-400">
+          <MapPinIcon className="size-3.5" />
+          Бүртгүүлэхэд таны байршлыг шалгана.
+        </p>
+      )}
 
       <div className="relative mx-auto my-4 grid aspect-square w-full max-w-xs place-items-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50">
         <div
@@ -75,7 +104,11 @@ export function CheckInFlow({
               ▦
             </span>
             <strong className="text-sm font-medium">
-              {pending ? "Шалгаж байна…" : "Камераа QR код руу чиглүүлнэ үү"}
+              {pending
+                ? locationRequired
+                  ? "Байршил шалгаж байна…"
+                  : "Шалгаж байна…"
+                : "Камераа QR код руу чиглүүлнэ үү"}
             </strong>
           </div>
         )}
@@ -96,7 +129,10 @@ export function CheckInFlow({
         onClick={() => {
           setError("");
           if (scanner.isScanning) void scanner.stop();
-          else void scanner.start();
+          else {
+            prefetchLocation();
+            void scanner.start();
+          }
         }}
       >
         {scanner.isScanning ? "Камер зогсоох" : "▣ Камер нээж QR уншуулах"}
@@ -123,6 +159,7 @@ export function CheckInFlow({
             autoComplete="one-time-code"
             maxLength={6}
             value={code}
+            onFocus={prefetchLocation}
             onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
             className="w-full rounded-lg border border-slate-300 bg-surface px-3.5 py-2.5 text-center font-mono text-xl tracking-[0.4em] text-slate-900 outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
           />

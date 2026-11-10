@@ -57,6 +57,13 @@
       "when": 1794293349230,
       "tag": "0007_drop_course_single_time",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794298894217,
+      "tag": "0008_campus_location",
+      "breakpoints": true
     }
   ]
 }

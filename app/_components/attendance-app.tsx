@@ -90,9 +90,11 @@ export function TeacherApp({
 export function StudentApp({
   user,
   courses,
+  locationRequired,
 }: {
   user: SessionUser;
   courses: StudentCourse[];
+  locationRequired: boolean;
 }) {
   const { notify, shellProps } = useShell(user, "Оюутны эрх");
   return (
@@ -105,6 +107,7 @@ export function StudentApp({
       <StudentHome
         firstName={user.firstName}
         courses={courses}
+        locationRequired={locationRequired}
         notify={notify}
       />
     </AppShell>

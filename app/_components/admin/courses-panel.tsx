@@ -442,7 +442,7 @@ function SlotsEditor({
           return (
             <div
               key={row.key}
-              className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_2.25rem] items-center gap-1.5"
+              className="grid grid-cols-[5.75rem_minmax(0,1fr)_2rem] items-center gap-1.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_2.25rem]"
             >
               <input type="hidden" name="slotDay" value={row.day} />
               <input type="hidden" name="slotStart" value={period.start} />
@@ -471,7 +471,7 @@ function SlotsEditor({
               >
                 {PERIODS.map((option) => (
                   <option key={option.number} value={option.number}>
-                    {`${option.number}-р пар · ${option.start}–${option.end}`}
+                    {`${option.number}-р пар ${option.start}–${option.end}`}
                   </option>
                 ))}
               </select>
@@ -481,7 +481,7 @@ function SlotsEditor({
                 aria-label={`${index + 1}-р мөрийг хасах`}
                 onClick={() => remove(row.key)}
                 disabled={rows.length === 1}
-                className="grid size-9 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-700 disabled:invisible"
+                className="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-700 disabled:invisible sm:size-9"
               >
                 <TrashIcon className="size-4" />
               </button>
@@ -539,8 +539,10 @@ function ClassGroupPicker({
         <input key={group} type="hidden" name="classGroups" value={group} />
       ))}
       <div className="rounded-lg border border-slate-300 p-2">
-        <div className="grid grid-cols-[minmax(0,1fr)_repeat(4,minmax(0,3.25rem))] items-center gap-1.5">
-          <span className="px-1 text-[13px] text-slate-400">Хөтөлбөр</span>
+        <div className="grid grid-cols-[3.25rem_repeat(4,minmax(0,1fr))] sm:grid-cols-[minmax(0,1fr)_repeat(4,minmax(0,3.25rem))] items-center gap-1.5">
+          <span className="truncate px-1 text-[13px] text-slate-400">
+            <span className="hidden sm:inline">Хөтөлбөр</span>
+          </span>
           {COURSE_YEARS.map((year) => {
             const groups = yearGroups(year);
             const allOn = groups.every((group) => selected.has(group));
@@ -601,7 +603,9 @@ function ProgramRow({
         <strong className="block text-sm font-semibold text-slate-800">
           {code}
         </strong>
-        <small className="block truncate text-xs text-slate-400">{name}</small>
+        <small className="hidden truncate text-xs text-slate-400 sm:block">
+          {name}
+        </small>
       </span>
       {COURSE_YEARS.map((year) => {
         const group = `${code}-${year}`;

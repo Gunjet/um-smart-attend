@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { STATUS, STATUS_TEXT_CLASS } from "../../_lib/constants";
 import type { RosterEntry } from "../../_lib/dto";
+import { formatDistance } from "../../_lib/geo";
 import type { AttendanceStatus } from "../../_lib/types";
 import { cx, ProgressBar } from "../ui";
 
@@ -68,6 +69,9 @@ export function LiveRoster({
     (entry) => entry.status === STATUS.absent,
   ).length;
   const pending = entries.length - present - absent;
+  const farAway = entries.filter(
+    (entry) => entry.locationOk === false && entry.status === STATUS.present,
+  ).length;
   const filterCount: Record<Filter, number> = {
     all: entries.length,
     pending,
@@ -101,6 +105,11 @@ export function LiveRoster({
           value={entries.length ? (present / entries.length) * 100 : 0}
           className="mt-2 h-2"
         />
+        {farAway > 0 && (
+          <p className="mt-1 text-sm font-medium text-amber-700">
+            ⚠ {farAway} оюутны байршил сургуулийнхтай таарахгүй байна
+          </p>
+        )}
         {isLive && pending > 0 && (
           <p className="mt-1 text-sm text-slate-500">
             {pending} оюутан хүлээгдэж байна
@@ -166,6 +175,17 @@ export function LiveRoster({
                 {entry.name}
               </strong>
               <small className="text-[13px] text-slate-400">{entry.code}</small>
+              {entry.locationOk === false &&
+                entry.status === STATUS.present && (
+                  <small
+                    className="mt-0.5 block text-[13px] font-medium text-amber-700"
+                    title="Оюутан сургуулийн байрнаас гадна бүртгүүлсэн байж магадгүй"
+                  >
+                    ⚠ Байршил таарахгүй
+                    {entry.distanceM !== null &&
+                      ` · ${formatDistance(entry.distanceM)}`}
+                  </small>
+                )}
             </span>
             {isLive ? (
               <div

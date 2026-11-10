@@ -2,11 +2,15 @@ import { sql } from "drizzle-orm";
 import {
   check,
   date,
+  doublePrecision,
   index,
+  integer,
+  boolean,
   jsonb,
   pgEnum,
   pgTable,
   primaryKey,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
@@ -169,6 +173,10 @@ export const attendanceRecords = pgTable(
     markedBy: uuid("marked_by").references(() => users.id, {
       onDelete: "set null",
     }),
+    /** Бүртгүүлэх үеийн сургуулиас хүртэлх зай (м). Шалгаагүй бол null. */
+    distanceM: integer("distance_m"),
+    /** Байршил зөвшөөрсөн радиуст багтсан эсэх. Шалгаагүй бол null. */
+    locationOk: boolean("location_ok"),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -176,6 +184,25 @@ export const attendanceRecords = pgTable(
   (table) => [
     primaryKey({ columns: [table.sessionId, table.studentId] }),
     index("attendance_records_student_id_idx").on(table.studentId),
+  ],
+);
+
+/** Сургуулийн байршил (ганц мөр, id = 1). Ирц бүртгэхэд зайг үүнээс тооцно. */
+export const campusLocation = pgTable(
+  "campus_location",
+  {
+    id: smallint("id").primaryKey().default(1),
+    latitude: doublePrecision("latitude").notNull(),
+    longitude: doublePrecision("longitude").notNull(),
+    /** Зөвшөөрөх радиус (м). */
+    radiusM: integer("radius_m").notNull().default(150),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check("campus_location_singleton", sql`${table.id} = 1`),
+    check("campus_location_radius", sql`${table.radiusM} between 20 and 5000`),
   ],
 );
 
