@@ -44,8 +44,7 @@ export function SiteQrPanel() {
         Сайтын QR
       </h1>
       <p className="mt-1 text-[15px] text-slate-500">
-        Утасны камераар уншуулахад систем Safari эсвэл Chrome-д шууд нээгдэнэ.
-        Хэвлэж анги, хаалган дээр наах боломжтой.
+        Камераар уншуулж системд орно.
       </p>
 
       <section className="mt-6 flex flex-col items-center gap-5 rounded-2xl border border-slate-200 bg-surface p-6 sm:flex-row sm:items-start">
@@ -64,8 +63,7 @@ export function SiteQrPanel() {
 
         <div className="flex w-full min-w-0 flex-col gap-3">
           <div>
-            <p className="text-sm text-slate-500">Сайтын хаяг</p>
-            <p className="mt-0.5 break-all font-mono text-[15px] font-medium text-slate-900">
+            <p className="break-all font-mono text-[15px] font-medium text-slate-900">
               {url || "…"}
             </p>
           </div>
@@ -92,15 +90,6 @@ export function SiteQrPanel() {
               PNG татах
             </a>
           </div>
-          <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-500">
-            <li>
-              Энэ хуудсыг production хаягаар нээсэн үед QR зөв хаягтай үүснэ.
-            </li>
-            <li>
-              Хэвлэхдээ 6 см-ээс багагүй хэмжээтэй байлгавал хол зайнаас
-              уншигдана.
-            </li>
-          </ul>
         </div>
       </section>
     </div>
