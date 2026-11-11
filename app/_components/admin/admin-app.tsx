@@ -8,12 +8,13 @@ import type { CampusSite } from "../../_lib/geo";
 import type { SessionUser } from "../../_lib/types";
 import { logout } from "../../_server/auth/actions";
 import { AppShell, type NavItem } from "../app-shell";
-import { BookIcon, MapPinIcon, UsersIcon } from "../icons";
+import { BookIcon, MapPinIcon, QrIcon, UsersIcon } from "../icons";
 import { AdminPanel } from "./admin-panel";
 import { CampusPanel } from "./campus-panel";
 import { CoursesPanel } from "./courses-panel";
+import { SiteQrPanel } from "./site-qr-panel";
 
-type AdminView = "users" | "courses" | "campus";
+type AdminView = "users" | "courses" | "campus" | "qr";
 
 const ADMIN_NAV: NavItem<AdminView>[] = [
   {
@@ -33,6 +34,12 @@ const ADMIN_NAV: NavItem<AdminView>[] = [
     label: "Байршил",
     shortLabel: "Байршил",
     icon: <MapPinIcon />,
+  },
+  {
+    id: "qr",
+    label: "Сайтын QR",
+    shortLabel: "QR",
+    icon: <QrIcon className="size-[18px]" />,
   },
 ];
 
@@ -65,7 +72,9 @@ export function AdminApp({
       notice={notice}
       onDismissNotice={dismissNotice}
     >
-      {view === "courses" ? (
+      {view === "qr" ? (
+        <SiteQrPanel />
+      ) : view === "courses" ? (
         <CoursesPanel courses={courses} users={users} notify={notify} />
       ) : view === "campus" ? (
         <CampusPanel sites={sites} notify={notify} />
