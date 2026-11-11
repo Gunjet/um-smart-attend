@@ -1,6 +1,6 @@
 "use client";
 
-import { DownloadIcon, SearchIcon } from "../icons";
+import { ChevronRightIcon, DownloadIcon, SearchIcon } from "../icons";
 import { useMemo, useState, useTransition } from "react";
 import { useNow } from "../../_hooks/use-now";
 import {
@@ -88,9 +88,9 @@ export function TeacherReport({
             Таны заадаг {courses.length} хичээлийн оюутнуудын ирцийн нэгтгэл
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           <select
-            className="rounded-lg border border-slate-200 bg-surface px-3 py-2 text-sm text-slate-700"
+            className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 bg-surface px-3 text-sm text-slate-700 sm:flex-none"
             aria-label="Сар сонгох"
             value={month}
             onChange={(event) => setPickedMonth(event.target.value)}
@@ -102,7 +102,7 @@ export function TeacherReport({
             ))}
           </select>
           <button
-            className="rounded-lg border border-slate-200 bg-surface px-4 py-2 text-sm font-medium text-slate-700 hover:border-emerald-300 disabled:opacity-50"
+            className="inline-flex h-10 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-slate-200 bg-surface px-4 text-sm font-medium text-slate-700 hover:border-emerald-300 hover:bg-slate-50 disabled:opacity-50"
             disabled={!month || !report}
             onClick={() =>
               report &&
@@ -205,7 +205,7 @@ function CourseDetail({
 
   return (
     <section className="rounded-xl border border-slate-200 bg-surface">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4 sm:p-5">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">
             {report.course.title}
@@ -214,12 +214,12 @@ function CourseDetail({
             {report.course.code} · {formatMonthKey(month)}
           </p>
         </div>
-        <label className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 text-[15px]">
+        <label className="flex w-full items-center gap-2 rounded-lg border border-slate-200 px-3 text-[15px] sm:w-auto">
           <span className="text-slate-400" aria-hidden="true">
             <SearchIcon />
           </span>
           <input
-            className="w-56 py-2.5 text-[15px] outline-none placeholder:text-slate-400"
+            className="w-full min-w-0 bg-transparent py-2.5 text-[15px] outline-none placeholder:text-slate-400 sm:w-56"
             aria-label="Оюутан хайх"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -234,47 +234,22 @@ function CourseDetail({
         </p>
       ) : (
         <>
-          {/* Гар утсанд: оюутан бүр карт, өдөр/пар бүр жижиг мөр. */}
+          {/* Гар утсанд: оюутан бүр нэг мөр (нэгтгэл), дарвал дэлгэрэнгүй. */}
           <ul className="divide-y divide-slate-100 md:hidden">
             {rows.map((row) => (
-              <li key={row.student.id} className="px-4 py-3">
-                <p className="font-medium text-slate-800">{row.student.name}</p>
-                <p className="text-[13px] text-slate-400">{row.student.id}</p>
-                <div className="mt-2 grid grid-cols-2 gap-1.5">
-                  {report.columns.map((column) => {
-                    const cellKey = `${column.key}|${row.student.userId}`;
-                    const status =
-                      overrides.get(cellKey) ?? row.statusByDate[column.key];
-                    const { day } = formatShortDate(column.date);
-                    const editable = status && status !== STATUS.pending;
-                    return (
-                      <button
-                        key={column.key}
-                        type="button"
-                        disabled={!editable || Boolean(saving)}
-                        onClick={() =>
-                          editable && toggle(column, row.student, status)
-                        }
-                        aria-label={`${row.student.name}, ${column.date}${column.period ? ` ${column.period}-р пар` : ""}: ${status ?? "бүртгэлгүй"}`}
-                        className={cx(
-                          "flex items-center justify-between gap-2 rounded-lg border border-slate-100 px-2.5 py-1.5 text-left text-[13px] disabled:cursor-default",
-                          saving === cellKey && "animate-pulse",
-                        )}
-                      >
-                        <span className="whitespace-nowrap tabular-nums text-slate-500">
-                          {day}
-                          {column.period ? ` · ${column.period}-р` : ""}
-                        </span>
-                        {status ? (
-                          <StatusPill status={status} />
-                        ) : (
-                          <span className="text-slate-300">—</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </li>
+              <MobileStudentRow
+                key={row.student.id}
+                report={report}
+                row={row}
+                statusOf={(column) =>
+                  overrides.get(`${column.key}|${row.student.userId}`) ??
+                  row.statusByDate[column.key]
+                }
+                saving={saving}
+                onToggle={(column, status) =>
+                  toggle(column, row.student, status)
+                }
+              />
             ))}
             {rows.length === 0 && (
               <li className="py-8 text-center text-[15px] text-slate-500">
@@ -371,5 +346,147 @@ function CourseDetail({
         </>
       )}
     </section>
+  );
+}
+
+const STATUS_TEXT: Record<AttendanceStatus, string> = {
+  Ирсэн: "text-emerald-800",
+  Тасалсан: "text-rose-700",
+  Чөлөөтэй: "text-amber-800",
+  "Хүлээгдэж байна": "text-slate-500",
+};
+
+const STATUS_DOT: Record<AttendanceStatus, string> = {
+  Ирсэн: "bg-emerald-600",
+  Тасалсан: "bg-rose-600",
+  Чөлөөтэй: "bg-amber-500",
+  "Хүлээгдэж байна": "bg-slate-300",
+};
+
+type Column = CourseAttendanceReport["columns"][number];
+type Row = CourseAttendanceReport["rows"][number];
+
+/** Гар утсанд: оюутны сарын нэгтгэл, дарвал пар бүрийн ирц (засаж болно). */
+function MobileStudentRow({
+  report,
+  row,
+  statusOf,
+  saving,
+  onToggle,
+}: {
+  report: CourseAttendanceReport;
+  row: Row;
+  statusOf: (column: Column) => AttendanceStatus | undefined;
+  saving: string | null;
+  onToggle: (column: Column, status: AttendanceStatus) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const statuses = report.columns.map(statusOf);
+  const count = (status: AttendanceStatus) =>
+    statuses.filter((item) => item === status).length;
+  const present = count(STATUS.present);
+  const absent = count(STATUS.absent);
+  const excused = count(STATUS.excused);
+  const recorded = present + absent + excused;
+  const rate = recorded ? Math.round((present / recorded) * 100) : null;
+
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-medium text-slate-800">
+            {row.student.name}
+          </span>
+          <span className="mt-0.5 flex flex-wrap gap-x-2.5 text-[13px] text-slate-500">
+            <span>{row.student.id}</span>
+            <span className="text-emerald-800">Ирсэн {present}</span>
+            {absent > 0 && (
+              <span className="text-rose-700">Тасалсан {absent}</span>
+            )}
+            {excused > 0 && (
+              <span className="text-amber-800">Чөлөөтэй {excused}</span>
+            )}
+          </span>
+        </span>
+        {rate !== null && (
+          <span
+            className={cx(
+              "shrink-0 text-[15px] font-semibold tabular-nums",
+              rate >= 80
+                ? "text-emerald-800"
+                : rate >= 60
+                  ? "text-amber-800"
+                  : "text-rose-700",
+            )}
+          >
+            {rate}%
+          </span>
+        )}
+        <ChevronRightIcon
+          className={cx(
+            "size-4 shrink-0 text-slate-400 transition",
+            open && "rotate-90",
+          )}
+        />
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4">
+          <p className="mb-2 text-[12px] text-slate-400">
+            Ирсэн / тасалсан дээр дарж засна.
+          </p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {report.columns.map((column, index) => {
+              const status = statuses[index];
+              const cellKey = `${column.key}|${row.student.userId}`;
+              const { day } = formatShortDate(column.date);
+              const editable = Boolean(status) && status !== STATUS.pending;
+              return (
+                <button
+                  key={column.key}
+                  type="button"
+                  disabled={!editable || Boolean(saving)}
+                  onClick={() => status && editable && onToggle(column, status)}
+                  aria-label={`${row.student.name}, ${column.date}${column.period ? ` ${column.period}-р пар` : ""}: ${status ?? "бүртгэлгүй"}`}
+                  className={cx(
+                    "min-w-0 rounded-lg border border-slate-100 px-2.5 py-1.5 text-left disabled:cursor-default",
+                    editable && "active:bg-slate-50",
+                    saving === cellKey && "animate-pulse",
+                  )}
+                >
+                  <span className="block text-[12px] tabular-nums text-slate-400">
+                    {day}
+                    {column.period ? ` · ${column.period}-р пар` : ""}
+                  </span>
+                  {status ? (
+                    <span
+                      className={cx(
+                        "flex items-center gap-1.5 text-[13px] font-medium",
+                        STATUS_TEXT[status],
+                      )}
+                    >
+                      <span
+                        className={cx(
+                          "size-1.5 shrink-0 rounded-full",
+                          STATUS_DOT[status],
+                        )}
+                      />
+                      {status}
+                    </span>
+                  ) : (
+                    <span className="text-[13px] text-slate-300">—</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </li>
   );
 }

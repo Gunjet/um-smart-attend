@@ -145,7 +145,7 @@ export function CoursesPanel({
           {visible.map((course) => (
             <article
               key={course.id}
-              className="flex flex-col rounded-xl border border-slate-200 bg-surface p-4"
+              className="flex min-w-0 flex-col rounded-xl border border-slate-200 bg-surface p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

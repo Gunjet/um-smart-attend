@@ -10,8 +10,10 @@ import {
   useTransition,
 } from "react";
 import {
+  POST_AUDIENCE_LABEL,
   POST_LIMITS,
   POST_SOURCE_LABEL,
+  type PostAudience,
   type PostFormState,
   type PostItem,
   type PostSource,
@@ -23,6 +25,15 @@ import { cx, primaryButtonClass } from "../ui";
 
 const inputClass =
   "w-full rounded-lg border border-slate-300 bg-surface px-3.5 py-2.5 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100";
+
+const AUDIENCES: PostAudience[] = ["all", "students", "teachers"];
+
+/** Нийтлэх үеийн сонголтын нэр. */
+const AUDIENCE_CHOICE: Record<PostAudience, string> = {
+  all: "Бүгдэд",
+  students: "Оюутнуудад",
+  teachers: "Багш нарт",
+};
 
 const SOURCE_BADGE: Record<PostSource, string> = {
   academic: "bg-emerald-50 text-emerald-800",
@@ -156,19 +167,42 @@ function Composer({
       ) : (
         <>
           <input type="hidden" name="source" value={sources[0]} />
-          <p className="text-sm text-slate-500">
+          <p className="flex items-center gap-2 text-sm text-slate-500">
+            Нийтлэгч:
             <span
               className={cx(
-                "rounded-md px-2 py-0.5 font-medium",
+                "rounded-md px-2 py-0.5 font-semibold",
                 SOURCE_BADGE[sources[0]],
               )}
             >
               {POST_SOURCE_LABEL[sources[0]]}
-            </span>{" "}
-            -ийн нэрээр нийтлэгдэнэ
+            </span>
           </p>
         </>
       )}
+
+      <fieldset>
+        <legend className="mb-1.5 text-sm font-medium text-slate-700">
+          Хэнд
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          {AUDIENCES.map((audience) => (
+            <label key={audience} className="cursor-pointer">
+              <input
+                type="radio"
+                name="audience"
+                value={audience}
+                defaultChecked={audience === "all"}
+                className="peer sr-only"
+              />
+              <span className="inline-flex items-center rounded-full border border-slate-200 px-3.5 py-1.5 text-sm font-medium text-slate-600 transition peer-checked:border-emerald-600 peer-checked:bg-emerald-50 peer-checked:text-emerald-800 peer-focus-visible:ring-4 peer-focus-visible:ring-emerald-100">
+                {AUDIENCE_CHOICE[audience]}
+              </span>
+            </label>
+          ))}
+        </div>
+        <FieldError message={errors?.audience} />
+      </fieldset>
 
       <div>
         <label
@@ -328,6 +362,11 @@ function PostCard({ post, notify }: { post: PostItem; notify: Notify }) {
           {post.poll && (
             <span className="rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
               Санал асуулга
+            </span>
+          )}
+          {post.audience !== "all" && (
+            <span className="rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
+              {POST_AUDIENCE_LABEL[post.audience]}
             </span>
           )}
           <time className="tabular-nums text-slate-400">{post.createdAt}</time>

@@ -7,6 +7,27 @@ export const POST_SOURCE_LABEL: Record<PostSource, string> = {
   council: "Оюутны зөвлөл",
 };
 
+export type PostAudience = "all" | "students" | "teachers";
+
+export const POST_AUDIENCE_LABEL: Record<PostAudience, string> = {
+  all: "Бүгдэд",
+  students: "Зөвхөн оюутнуудад",
+  teachers: "Зөвхөн багш нарт",
+};
+
+/** Хэрэглэгчид энэ хүрээний зарлал харагдах эсэх (админ бүгдийг харна). */
+export function audienceIncludes(
+  audience: PostAudience,
+  role: SessionUser["role"],
+) {
+  return (
+    role === "admin" ||
+    audience === "all" ||
+    (audience === "students" && role === "student") ||
+    (audience === "teachers" && role === "teacher")
+  );
+}
+
 export const POST_LIMITS = {
   title: 120,
   body: 4000,
@@ -17,6 +38,7 @@ export const POST_LIMITS = {
 export type PostItem = {
   id: string;
   source: PostSource;
+  audience: PostAudience;
   title: string;
   body: string;
   /** "2026.11.11 14:05" (Улаанбаатарын цагаар). */
@@ -35,7 +57,7 @@ export type PostFormState = {
   message?: string;
   error?: string;
   fieldErrors?: Partial<
-    Record<"source" | "title" | "body" | "options", string>
+    Record<"source" | "audience" | "title" | "body" | "options", string>
   >;
 } | null;
 
@@ -43,7 +65,8 @@ export type PostFormState = {
 export function postSourcesFor(
   user: Pick<SessionUser, "role" | "isCouncil">,
 ): PostSource[] {
-  if (user.role === "admin") return ["academic", "council"];
+  // Админ үргэлж Сургалтын албаны нэрээр; Оюутны зөвлөлийнхийг гишүүд нь оруулна.
+  if (user.role === "admin") return ["academic"];
   if (user.role === "student" && user.isCouncil) return ["council"];
   return [];
 }

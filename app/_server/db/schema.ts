@@ -309,11 +309,19 @@ export type NewUserRow = typeof users.$inferInsert;
 /** Зарлалыг хэний нэрээр оруулсан: Сургалтын алба эсвэл Оюутны зөвлөл. */
 export const postSource = pgEnum("post_source", ["academic", "council"]);
 
+/** Зарлалыг хэнд харуулах: бүгдэд, зөвхөн оюутнуудад, зөвхөн багш нарт. */
+export const postAudience = pgEnum("post_audience", [
+  "all",
+  "students",
+  "teachers",
+]);
+
 export const posts = pgTable(
   "posts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     source: postSource("source").notNull(),
+    audience: postAudience("audience").notNull().default("all"),
     authorId: uuid("author_id").references(() => users.id, {
       onDelete: "set null",
     }),

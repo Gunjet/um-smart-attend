@@ -172,7 +172,7 @@ export function AdminPanel({
         </div>
 
         {/* Гар утсан дээр: карт жагсаалт */}
-        <ul className="divide-y divide-slate-100 md:hidden">
+        <ul className="divide-y divide-slate-100 xl:hidden">
           {visible.map((user) => (
             <li key={user.id} className="px-4 py-3.5">
               <div className="flex items-start justify-between gap-3">
@@ -233,7 +233,7 @@ export function AdminPanel({
         </ul>
 
         {/* Том дэлгэцэн дээр: хүснэгт */}
-        <div className="hidden overflow-x-auto md:block">
+        <div className="hidden overflow-x-auto xl:block">
           <table className="w-full min-w-[720px] border-separate border-spacing-0 text-[15px]">
             <thead>
               <tr className="text-left text-sm text-slate-500">

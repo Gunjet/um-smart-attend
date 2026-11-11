@@ -62,7 +62,7 @@ export function CourseList({
           <button
             key={course.id}
             className={cx(
-              "grid w-full grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border bg-surface p-3 text-left transition sm:grid-cols-[36px_minmax(0,1fr)_120px_90px_170px_16px] sm:gap-4 sm:px-4",
+              "grid w-full grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border bg-surface p-3 text-left transition lg:grid-cols-[36px_minmax(0,1fr)_120px_90px_170px_16px] lg:gap-4 lg:px-4",
               isSelected
                 ? "border-emerald-300 shadow-sm ring-1 ring-emerald-200"
                 : "border-slate-200 hover:border-emerald-200",
@@ -79,30 +79,30 @@ export function CourseList({
               </strong>
               <small className="mt-1 block text-sm text-slate-500">
                 {course.code}
-                <span className="sm:hidden"> · {course.time}</span>
+                <span className="lg:hidden"> · {course.time}</span>
               </small>
             </span>
-            <span className="hidden text-sm text-slate-500 sm:block">
+            <span className="hidden text-sm text-slate-500 lg:block">
               <span className="inline-flex items-center gap-1.5">
                 <ClockIcon className="size-3.5" />
                 {course.time}
               </span>
             </span>
-            <span className="hidden text-sm tabular-nums text-slate-500 sm:block">
+            <span className="hidden text-sm tabular-nums text-slate-500 lg:block">
               {course.enrolled} оюутан
             </span>
-            <span className={cx("text-right text-sm sm:text-left", state.tone)}>
+            <span className={cx("text-right text-sm lg:text-left", state.tone)}>
               {state.label && (
                 <>
                   <span className="inline-flex items-center gap-1.5">
                     <StatusDot />
-                    <span className="hidden sm:inline">{state.label}</span>
+                    <span className="hidden lg:inline">{state.label}</span>
                   </span>
                 </>
               )}
             </span>
             <span
-              className="hidden text-right text-slate-400 sm:block"
+              className="hidden text-right text-slate-400 lg:block"
               aria-hidden="true"
             >
               <ChevronRightIcon />

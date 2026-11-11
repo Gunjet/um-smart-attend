@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import * as z from "zod";
 import type { ActionResult } from "../../_lib/dto";
 import {
+  audienceIncludes,
   POST_LIMITS,
   type PostFormState,
   postSourcesFor,
@@ -30,6 +31,9 @@ const field = (formData: FormData, name: string) =>
 const PostSchema = z.object({
   source: z.enum(["academic", "council"], {
     error: "Хэний нэрээр гэдгээ сонгоно уу.",
+  }),
+  audience: z.enum(["all", "students", "teachers"], {
+    error: "Хэнд зориулсныг сонгоно уу.",
   }),
   title: z
     .string()
@@ -66,6 +70,7 @@ export async function createPost(
   const isPoll = formData.get("isPoll") === "on";
   const parsed = PostSchema.safeParse({
     source: field(formData, "source") || allowed[0],
+    audience: field(formData, "audience") || "all",
     title: field(formData, "title"),
     body: field(formData, "body"),
     options: isPoll
@@ -80,13 +85,14 @@ export async function createPost(
     return {
       fieldErrors: {
         source: fields.source?.[0],
+        audience: fields.audience?.[0],
         title: fields.title?.[0],
         body: fields.body?.[0],
         options: fields.options?.[0],
       },
     };
   }
-  const { source, title, body, options } = parsed.data;
+  const { source, audience, title, body, options } = parsed.data;
   if (!allowed.includes(source)) {
     return { fieldErrors: { source: "Энэ нэрээр оруулах эрх алга." } };
   }
@@ -103,7 +109,7 @@ export async function createPost(
     await getDb().transaction(async (tx) => {
       const [post] = await tx
         .insert(posts)
-        .values({ source, title, body, authorId: user.id })
+        .values({ source, audience, title, body, authorId: user.id })
         .returning({ id: posts.id });
       if (options.length) {
         await tx.insert(pollOptions).values(
@@ -143,11 +149,15 @@ export async function votePoll(
   try {
     const db = getDb();
     const [option] = await db
-      .select({ id: pollOptions.id })
+      .select({ id: pollOptions.id, audience: posts.audience })
       .from(pollOptions)
+      .innerJoin(posts, eq(posts.id, pollOptions.postId))
       .where(and(eq(pollOptions.id, optionId), eq(pollOptions.postId, postId)))
       .limit(1);
-    if (!option) return { ok: false, error: "Санал асуулга олдсонгүй." };
+    // Өөрт хамааралгүй санал асуулгад санал өгөхгүй.
+    if (!option || !audienceIncludes(option.audience, user.role)) {
+      return { ok: false, error: "Санал асуулга олдсонгүй." };
+    }
     await db
       .insert(pollVotes)
       .values({ postId, optionId, userId: user.id })

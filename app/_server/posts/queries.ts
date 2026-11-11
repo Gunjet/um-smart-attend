@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 import type { PostItem } from "../../_lib/posts";
 import type { SessionUser } from "../../_lib/types";
 import { getDb, schema } from "../db";
@@ -16,12 +16,25 @@ export async function getPosts(
     .select({
       id: posts.id,
       source: posts.source,
+      audience: posts.audience,
       title: posts.title,
       body: posts.body,
       authorId: posts.authorId,
       createdAt: sql<string>`to_char(${posts.createdAt} at time zone 'Asia/Ulaanbaatar', 'YYYY.MM.DD HH24:MI')`,
     })
     .from(posts)
+    // Админ бүгдийг; бусад нь өөрт хамаарах болон өөрийн оруулсныг харна.
+    .where(
+      user.role === "admin"
+        ? undefined
+        : or(
+            inArray(posts.audience, [
+              "all",
+              user.role === "teacher" ? "teachers" : "students",
+            ]),
+            eq(posts.authorId, user.id),
+          ),
+    )
     .orderBy(desc(posts.createdAt))
     .limit(limit);
   if (!rows.length) return [];
@@ -68,7 +81,7 @@ export async function getPosts(
 /** Нэг зарлалын эзэн (устгах эрх шалгахад). */
 export async function findPostAuthor(postId: string) {
   const [row] = await getDb()
-    .select({ authorId: posts.authorId })
+    .select({ authorId: posts.authorId, audience: posts.audience })
     .from(posts)
     .where(eq(posts.id, postId))
     .limit(1);
