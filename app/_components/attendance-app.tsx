@@ -5,6 +5,7 @@ import { useNotice } from "../_hooks/use-notice";
 import type {
   StudentCourse,
   TeacherCourse,
+  TimetableCourse,
   TodayAttendance,
 } from "../_lib/dto";
 import type { LeaveRequestItem } from "../_lib/leave";
@@ -14,10 +15,12 @@ import { AppShell, type NavItem } from "./app-shell";
 import {
   CalendarIcon,
   CheckCircleIcon,
+  ClockIcon,
   DashboardIcon,
   ReportIcon,
 } from "./icons";
 import { LeavePage } from "./student/leave-page";
+import { Timetable } from "./student/timetable";
 import { StudentHome } from "./student/student-home";
 import { TeacherDashboard } from "./teacher/teacher-dashboard";
 import { LeaveReview } from "./teacher/leave-review";
@@ -40,7 +43,7 @@ const TEACHER_NAV: NavItem<TeacherView>[] = [
   },
 ];
 
-type StudentView = "attendance" | "leave";
+type StudentView = "attendance" | "timetable" | "leave";
 
 const STUDENT_NAV: NavItem<StudentView>[] = [
   {
@@ -48,6 +51,12 @@ const STUDENT_NAV: NavItem<StudentView>[] = [
     label: "Миний ирц",
     shortLabel: "Миний ирц",
     icon: <CheckCircleIcon />,
+  },
+  {
+    id: "timetable",
+    label: "Хичээлийн хуваарь",
+    shortLabel: "Хуваарь",
+    icon: <ClockIcon className="size-[18px]" />,
   },
   {
     id: "leave",
@@ -135,6 +144,8 @@ export function StudentApp({
   leaveRequests,
   today,
   todayAttendance,
+  timetable,
+  classGroup,
 }: {
   user: SessionUser;
   courses: StudentCourse[];
@@ -144,6 +155,9 @@ export function StudentApp({
   /** Улаанбаатарын цагаар өнөөдөр, "YYYY-MM-DD". */
   today: string;
   todayAttendance: TodayAttendance[];
+  timetable: TimetableCourse[];
+  /** Оюутны анги (хуваарийн анхдагч шүүлтүүр). */
+  classGroup: string | null;
 }) {
   const { notify, shellProps } = useShell(user, "Оюутны эрх");
   const [view, setView] = useState<StudentView>("attendance");
@@ -154,7 +168,9 @@ export function StudentApp({
       activeView={view}
       onNavigate={setView}
     >
-      {view === "leave" ? (
+      {view === "timetable" ? (
+        <Timetable courses={timetable} defaultGroup={classGroup} />
+      ) : view === "leave" ? (
         <LeavePage
           courses={courses}
           requests={leaveRequests}

@@ -22,13 +22,16 @@ import {
 } from "../../_server/admin/course-actions";
 import { Dialog } from "../dialog";
 import {
+  CheckIcon,
   PencilIcon,
   PlusIcon,
   SearchIcon,
   TrashIcon,
+  UploadIcon,
   UsersIcon,
 } from "../icons";
 import { cx, primaryButtonClass } from "../ui";
+import { TimetableImportForm } from "./timetable-import-form";
 import {
   Field,
   FormActions,
@@ -38,11 +41,12 @@ import {
 } from "./user-forms";
 
 type DialogState =
-  | { kind: "create" }
+  | { kind: "create" | "import" }
   | { kind: "edit" | "students" | "delete"; course: AdminCourse };
 
 const DIALOG_TITLE: Record<DialogState["kind"], string> = {
   create: "Хичээл нэмэх",
+  import: "Хуваарь оруулах (Excel)",
   edit: "Хичээл засах",
   students: "Хичээлийн оюутнууд",
   delete: "Хичээл устгах",
@@ -98,13 +102,22 @@ export function CoursesPanel({
             Хичээл үүсгэж, багш болон оюутнуудыг оноох
           </p>
         </div>
-        <button
-          className={cx(primaryButtonClass, "w-full sm:w-auto")}
-          onClick={() => open({ kind: "create" })}
-        >
-          <PlusIcon className="size-4" />
-          Хичээл нэмэх
-        </button>
+        <div className="flex w-full gap-2 sm:w-auto">
+          <button
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-surface px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:flex-none"
+            onClick={() => open({ kind: "import" })}
+          >
+            <UploadIcon className="size-4" />
+            Excel хуваарь
+          </button>
+          <button
+            className={cx(primaryButtonClass, "flex-1 sm:flex-none")}
+            onClick={() => open({ kind: "create" })}
+          >
+            <PlusIcon className="size-4" />
+            Хичээл нэмэх
+          </button>
+        </div>
       </div>
 
       <label className="mb-4 flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-surface px-3 sm:w-80">
@@ -224,7 +237,7 @@ export function CoursesPanel({
         onClose={close}
         title={dialog ? DIALOG_TITLE[dialog.kind] : ""}
         description={
-          dialog && dialog.kind !== "create" ? dialog.course.title : undefined
+          dialog && "course" in dialog ? dialog.course.title : undefined
         }
       >
         {(dialog?.kind === "create" || dialog?.kind === "edit") && (
@@ -235,6 +248,9 @@ export function CoursesPanel({
             onCancel={close}
             onDone={done}
           />
+        )}
+        {dialog?.kind === "import" && (
+          <TimetableImportForm key={dialogKey} onCancel={close} onDone={done} />
         )}
         {dialog?.kind === "students" && (
           <EnrollmentForm
@@ -539,103 +555,79 @@ function ClassGroupPicker({
 
   return (
     <fieldset>
-      <legend className="mb-1.5 block text-sm font-medium text-slate-700">
+      <legend className="mb-1.5 flex w-full items-baseline justify-between gap-2 text-sm font-medium text-slate-700">
         Ангиуд
-      </legend>
-      {[...selected].map((group) => (
-        <input key={group} type="hidden" name="classGroups" value={group} />
-      ))}
-      <div className="rounded-lg border border-slate-300 p-2">
-        <div className="grid grid-cols-[3.25rem_repeat(4,minmax(0,1fr))] sm:grid-cols-[minmax(0,1fr)_repeat(4,minmax(0,3.25rem))] items-center gap-1.5">
-          <span className="truncate px-1 text-[13px] text-slate-400">
-            <span className="hidden sm:inline">Хөтөлбөр</span>
+        {selected.size > 0 && (
+          <span className="text-[13px] font-normal text-slate-500">
+            {selected.size} анги сонгосон
           </span>
-          {COURSE_YEARS.map((year) => {
-            const groups = yearGroups(year);
-            const allOn = groups.every((group) => selected.has(group));
-            return (
-              <button
-                key={year}
-                type="button"
-                title={`${year}-р курсийн бүх хөтөлбөр`}
-                aria-pressed={allOn}
-                onClick={() => toggle(groups)}
-                className={cx(
-                  "rounded-md py-1 text-[13px] font-medium transition",
-                  allOn
-                    ? "bg-emerald-50 text-emerald-800"
-                    : "text-slate-500 hover:bg-slate-100",
-                )}
-              >
-                {year}-р
-              </button>
-            );
-          })}
-
-          {PROGRAMS.map((program) => (
-            <ProgramRow
-              key={program.code}
-              code={program.code}
-              name={program.name}
-              selected={selected}
-              onToggle={(group) => toggle([group])}
-            />
-          ))}
-        </div>
+        )}
+      </legend>
+      <div className="divide-y divide-slate-100 rounded-lg border border-slate-300">
+        {COURSE_YEARS.map((year) => {
+          const groups = yearGroups(year);
+          const count = groups.filter((group) => selected.has(group)).length;
+          const allOn = count === groups.length;
+          return (
+            <div key={year} className="px-3 py-2.5">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="text-[13px] font-semibold text-slate-600">
+                  {year}-р курс
+                </span>
+                <button
+                  type="button"
+                  onClick={() => toggle(groups)}
+                  className="rounded-md px-2 py-0.5 text-[13px] font-medium text-emerald-700 hover:bg-slate-100"
+                >
+                  {allOn ? "Бүгдийг болих" : "Бүгдийг сонгох"}
+                </button>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {PROGRAMS.map((program) => {
+                  const group = `${program.code}-${year}`;
+                  const on = selected.has(group);
+                  return (
+                    <label
+                      key={group}
+                      title={`${program.name}, ${year}-р курс`}
+                      className="relative cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        name="classGroups"
+                        value={group}
+                        checked={on}
+                        onChange={() => toggle([group])}
+                        className="peer sr-only"
+                      />
+                      <span
+                        className={cx(
+                          "flex h-9 items-center justify-center gap-1 rounded-full border px-1 text-[13px] font-medium transition peer-focus-visible:ring-4 peer-focus-visible:ring-emerald-100 sm:text-sm",
+                          on
+                            ? "border-emerald-600 bg-emerald-50 text-emerald-800"
+                            : "border-slate-200 text-slate-600 hover:border-slate-400",
+                        )}
+                      >
+                        {on && (
+                          <CheckIcon className="hidden size-3.5 shrink-0 min-[400px]:block" />
+                        )}
+                        {group}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <p className="mt-1.5 text-[13px] text-slate-400">
+      <p className="mt-1.5 text-[13px] text-slate-500">
         {selected.size
-          ? `Сонгосон: ${formatClassGroups([...selected])}`
-          : "Курсийн дугаар дээр дарвал тухайн курсийн бүх хөтөлбөр сонгогдоно."}
+          ? formatClassGroups([...selected])
+          : "Хичээлд суух ангиудаа сонгоно уу. Сонгосон ангийн оюутнууд автоматаар бүртгэгдэнэ."}
       </p>
       {error && <p className="mt-1 text-[13px] text-rose-700">{error}</p>}
     </fieldset>
-  );
-}
-
-function ProgramRow({
-  code,
-  name,
-  selected,
-  onToggle,
-}: {
-  code: string;
-  name: string;
-  selected: Set<string>;
-  onToggle: (group: string) => void;
-}) {
-  return (
-    <>
-      <span className="min-w-0 px-1" title={name}>
-        <strong className="block text-sm font-semibold text-slate-800">
-          {code}
-        </strong>
-        <small className="hidden truncate text-xs text-slate-400 sm:block">
-          {name}
-        </small>
-      </span>
-      {COURSE_YEARS.map((year) => {
-        const group = `${code}-${year}`;
-        const on = selected.has(group);
-        return (
-          <button
-            key={group}
-            type="button"
-            aria-pressed={on}
-            aria-label={`${name}, ${year}-р курс`}
-            onClick={() => onToggle(group)}
-            className={cx(
-              "h-9 rounded-md border text-sm font-medium transition",
-              on
-                ? "border-emerald-700 bg-emerald-700 text-white"
-                : "border-slate-200 text-slate-500 hover:border-slate-400",
-            )}
-          >
-            {year}
-          </button>
-        );
-      })}
-    </>
   );
 }
 

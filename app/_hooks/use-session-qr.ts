@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { checkInUrl } from "../_lib/checkin-link";
 import type { SessionQr } from "../_lib/dto";
 import { getSessionQr } from "../_server/attendance/actions";
 
@@ -20,12 +21,16 @@ export function useSessionQr(sessionId: string) {
       try {
         const next = await getSessionQr(sessionId);
         if (cancelled || !next) return;
-        const dataUrl = await QRCode.toDataURL(next.payload, {
-          width: 320,
-          margin: 1,
-          color: { dark: "#15221f", light: "#ffffff" },
-          errorCorrectionLevel: "M",
-        });
+        // Камераар уншуулахад сайт нээгдэж ирц бүртгэх алхам эхэлнэ.
+        const dataUrl = await QRCode.toDataURL(
+          checkInUrl(window.location.origin, next.payload),
+          {
+            width: 320,
+            margin: 1,
+            color: { dark: "#15221f", light: "#ffffff" },
+            errorCorrectionLevel: "M",
+          },
+        );
         if (cancelled) return;
         setQr({ ...next, dataUrl });
         timer = setTimeout(

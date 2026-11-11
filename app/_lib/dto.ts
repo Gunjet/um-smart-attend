@@ -103,3 +103,14 @@ export type TodayAttendance = {
   open: boolean;
   status: AttendanceStatus;
 };
+
+/** Хуваарь харуулах хичээл. */
+export type TimetableCourse = {
+  id: string;
+  code: string;
+  title: string;
+  teacherName: string | null;
+  /** Ангиуд, жишээ нь ["МТ-1", "ЦИ-1"]. */
+  classGroups: string[];
+  slots: CourseSlot[];
+};

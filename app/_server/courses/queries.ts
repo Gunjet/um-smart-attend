@@ -6,6 +6,7 @@ import type {
   RosterEntry,
   StudentCourse,
   TeacherCourse,
+  TimetableCourse,
   TodayAttendance,
 } from "../../_lib/dto";
 import { nameParts } from "../../_lib/names";
@@ -362,6 +363,40 @@ export async function getStudentToday(
     open: Boolean(row.open),
     status: row.status ? STATUS_LABEL[row.status] : "Хүлээгдэж байна",
   }));
+}
+
+/**
+ * Хичээлийн хуваарь: одоогийн улиралд (дуусах огноо өнгөрөөгүй) орж буй
+ * бүх хичээл. Оюутан хөтөлбөр, курсээр шүүж харна.
+ */
+export async function getTimetable(): Promise<TimetableCourse[]> {
+  const teacher = alias(users, "teacher");
+  const rows = await getDb()
+    .select({
+      id: courses.id,
+      code: courses.code,
+      title: courses.title,
+      teacherName: teacher.fullName,
+      classGroups: courses.classGroups,
+      slots: courses.slots,
+    })
+    .from(courses)
+    .leftJoin(teacher, eq(teacher.id, courses.teacherId))
+    .where(
+      sql`${courses.endDate} >= (now() at time zone 'Asia/Ulaanbaatar')::date`,
+    )
+    .orderBy(asc(courses.title));
+  return rows.map((row) => ({ ...row, slots: sortSlots(row.slots) }));
+}
+
+/** Оюутны анги (хуваарийн анхны шүүлтүүрт). */
+export async function getStudentClassGroup(studentId: string) {
+  const [row] = await getDb()
+    .select({ classGroup: users.classGroup })
+    .from(users)
+    .where(eq(users.id, studentId))
+    .limit(1);
+  return row?.classGroup ?? null;
 }
 
 /* --------------------------------- Админ --------------------------------- */

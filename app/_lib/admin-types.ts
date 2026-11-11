@@ -44,4 +44,23 @@ export type AdminActionState = {
   >;
   /** Автоматаар үүсгэсэн нууц үг — зөвхөн нэг удаа харуулна. */
   generatedPassword?: string;
+  /** Хуваарийн Excel-ийг шалгасан үр дүн (хадгалахаас өмнө). */
+  importPreview?: TimetableImportPreview;
+  importErrors?: Partial<Record<"file" | "startDate" | "endDate", string>>;
 } | null;
+
+export type TimetableImportPreview = {
+  courses: {
+    code: string;
+    title: string;
+    classGroups: string[];
+    /** "Да 1-2, Пү 3" гэх мэт. */
+    schedule: string;
+    teacherName: string;
+    /** Бүртгэлтэй багштай тулгагдсан эсэх. */
+    teacherMatched: boolean;
+    /** Ийм кодтой хичээл өмнө нь байсан (шинэчлэгдэнэ). */
+    exists: boolean;
+  }[];
+  warnings: string[];
+};

@@ -13,8 +13,10 @@ import {
 } from "./_server/leave/queries";
 import { getCampusSites } from "./_server/settings/campus";
 import {
+  getStudentClassGroup,
   getStudentCourses,
   getStudentToday,
+  getTimetable,
   getTeacherCourses,
   getTeacherReportRecords,
   listCoursesForAdmin,
@@ -70,6 +72,8 @@ async function AuthGate() {
     leaveRequests,
     today,
     todayAttendance,
+    timetable,
+    classGroup,
   ] = await Promise.all([
     getStudentCourses(user.id),
     getCampusSites(),
@@ -77,6 +81,8 @@ async function AuthGate() {
     getStudentLeaveRequests(user.id),
     getUlaanbaatarToday(),
     getStudentToday(user.id),
+    getTimetable(),
+    getStudentClassGroup(user.id),
   ]);
   return (
     <StudentApp
@@ -87,6 +93,8 @@ async function AuthGate() {
       leaveRequests={leaveRequests}
       today={today}
       todayAttendance={todayAttendance}
+      timetable={timetable}
+      classGroup={classGroup}
     />
   );
 }

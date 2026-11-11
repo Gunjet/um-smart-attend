@@ -14,6 +14,13 @@ import {
   useTransition,
 } from "react";
 import { useQrScanner } from "../../_hooks/use-qr-scanner";
+import {
+  checkInCodeFromLocation,
+  clearCheckInFromLocation,
+  clearPendingCheckIn,
+  extractCheckInCode,
+  readPendingCheckIn,
+} from "../../_lib/checkin-link";
 import { LocationError, requestLocation } from "../../_lib/device-location";
 import type { CheckInStep, StudentCourse } from "../../_lib/dto";
 import type { Notify } from "../../_lib/types";
@@ -177,12 +184,26 @@ export function CheckInFlow({
     SCANNER_ELEMENT_ID,
     useCallback(
       (text: string) => {
-        void precheck(text).then((ok) => setScanned(ok ? text : null));
+        const value = extractCheckInCode(text);
+        void precheck(value).then((ok) => setScanned(ok ? value : null));
         return true; // эхний уншилтын дараа камерыг зогсооно
       },
       [precheck],
     ),
   );
+
+  // Багшийн QR-ийг утасны камераар уншуулж сайт нээгдсэн бол (…/?c=…),
+  // эсвэл нэвтрэхээс өмнө уншуулсан бол кодыг шууд шалгаж Face ID товч гаргана.
+  useEffect(() => {
+    const code = checkInCodeFromLocation() ?? readPendingCheckIn();
+    if (!code) return;
+    clearCheckInFromLocation();
+    clearPendingCheckIn();
+    const timer = setTimeout(() => {
+      void precheck(code).then((ok) => setScanned(ok ? code : null));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [precheck]);
 
   const hasCode = Boolean(validCode);
   const stepState = (step: CheckInStep): StepState => {

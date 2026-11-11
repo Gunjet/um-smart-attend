@@ -1,6 +1,10 @@
 "use client";
 
-import { useActionState, useState, type ReactNode } from "react";
+import { useActionState, useEffect, useState, type ReactNode } from "react";
+import {
+  checkInCodeFromLocation,
+  savePendingCheckIn,
+} from "../_lib/checkin-link";
 import { login } from "../_server/auth/actions";
 import type { Role } from "../_lib/types";
 import {
@@ -50,6 +54,17 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const copy = ROLE_COPY[role];
+
+  // Багшийн QR-ийг камераар уншуулж нээсэн бол кодыг хадгалж, нэвтэрсний
+  // дараа ирц бүртгэх алхмыг үргэлжлүүлнэ.
+  useEffect(() => {
+    const code = checkInCodeFromLocation();
+    if (!code) return;
+    savePendingCheckIn(code);
+    // Ирцийн QR-ийг оюутан уншуулдаг тул «Оюутан» табыг сонгоно.
+    const timer = setTimeout(() => setRole("student"), 0);
+    return () => clearTimeout(timer);
+  }, []);
   const fieldErrors = state?.fieldErrors;
 
   return (

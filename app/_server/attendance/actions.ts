@@ -17,6 +17,7 @@ import {
   MAX_ACCURACY_TOLERANCE_M,
 } from "../../_lib/geo";
 import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
+import { extractCheckInCode } from "../../_lib/checkin-link";
 import { getCurrentUser } from "../auth/dal";
 import { verifyCheckInPasskey } from "../auth/webauthn";
 import {
@@ -342,6 +343,8 @@ async function resolveCheckInSession(
   | { session: { id: string; courseTitle: string } }
   | { error: string; kind: "code_invalid" | "code_expired" }
 > {
+  // QR нь сайтын линк байж болно (…/?c=<код>).
+  value = extractCheckInCode(value);
   const db = getDb();
   // Оюутны бүртгэлтэй хичээлүүдийн нээлттэй session-ууд.
   const openSessions = await db
