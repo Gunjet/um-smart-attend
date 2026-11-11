@@ -63,6 +63,9 @@
   --color-amber-50: #2a2008;
   --color-amber-700: #fbbf24;
   --color-amber-800: #fcd34d;
+
+  --color-sky-50: #0c2233;
+  --color-sky-800: #7dd3fc;
 }
 
 html {

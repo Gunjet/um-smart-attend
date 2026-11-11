@@ -126,6 +126,7 @@ export async function createUser(
           email: role === "student" ? null : identifier.data,
           studentCode: role === "student" ? identifier.data : null,
           classGroup: role === "student" ? classGroup : null,
+          isCouncil: role === "student" && formData.get("isCouncil") === "on",
           passwordHash,
         })
         .returning({ id: schema.users.id });
@@ -201,7 +202,11 @@ export async function updateUser(
         .set({
           fullName: fullName.data,
           ...(user.role === "student"
-            ? { studentCode: identifier.data, classGroup: classGroup.data }
+            ? {
+                studentCode: identifier.data,
+                classGroup: classGroup.data,
+                isCouncil: formData.get("isCouncil") === "on",
+              }
             : { email: identifier.data }),
           updatedAt: new Date(),
         })

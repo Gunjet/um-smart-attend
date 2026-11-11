@@ -9,6 +9,8 @@ export type SessionUser = {
   firstName: string;
   initials: string;
   studentCode: string | null;
+  /** Оюутны зөвлөлийн гишүүн (зарлал оруулах эрхтэй). */
+  isCouncil: boolean;
 };
 
 export type AttendanceStatus =

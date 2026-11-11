@@ -11,6 +11,7 @@ import {
   getTeacherLeaveRequests,
   getUlaanbaatarToday,
 } from "./_server/leave/queries";
+import { getPosts } from "./_server/posts/queries";
 import { getCampusSites } from "./_server/settings/campus";
 import {
   getStudentClassGroup,
@@ -36,13 +37,20 @@ async function AuthGate() {
   if (!user) return <LoginScreen />;
 
   if (user.role === "admin") {
-    const [users, courses, sites] = await Promise.all([
+    const [users, courses, sites, posts] = await Promise.all([
       listUsersForAdmin(),
       listCoursesForAdmin(),
       getCampusSites(),
+      getPosts(user),
     ]);
     return (
-      <AdminApp user={user} users={users} courses={courses} sites={sites} />
+      <AdminApp
+        user={user}
+        users={users}
+        courses={courses}
+        sites={sites}
+        posts={posts}
+      />
     );
   }
 
@@ -50,10 +58,11 @@ async function AuthGate() {
   await closeStaleSessions();
 
   if (user.role === "teacher") {
-    const [courses, records, leaveRequests] = await Promise.all([
+    const [courses, records, leaveRequests, posts] = await Promise.all([
       getTeacherCourses(user.id),
       getTeacherReportRecords(user.id),
       getTeacherLeaveRequests(user.id),
+      getPosts(user),
     ]);
     return (
       <TeacherApp
@@ -61,6 +70,7 @@ async function AuthGate() {
         courses={courses}
         records={records}
         leaveRequests={leaveRequests}
+        posts={posts}
       />
     );
   }
@@ -74,6 +84,7 @@ async function AuthGate() {
     todayAttendance,
     timetable,
     classGroup,
+    posts,
   ] = await Promise.all([
     getStudentCourses(user.id),
     getCampusSites(),
@@ -83,6 +94,7 @@ async function AuthGate() {
     getStudentToday(user.id),
     getTimetable(),
     getStudentClassGroup(user.id),
+    getPosts(user),
   ]);
   return (
     <StudentApp
@@ -95,6 +107,7 @@ async function AuthGate() {
       todayAttendance={todayAttendance}
       timetable={timetable}
       classGroup={classGroup}
+      posts={posts}
     />
   );
 }

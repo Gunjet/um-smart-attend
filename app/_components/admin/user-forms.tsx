@@ -302,6 +302,25 @@ export function UserForm({
         </Field>
       )}
 
+      {isStudent && (
+        <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-slate-200 px-3.5 py-3">
+          <input
+            type="checkbox"
+            name="isCouncil"
+            defaultChecked={user?.isCouncil ?? false}
+            className="mt-0.5 size-4 accent-emerald-700"
+          />
+          <span>
+            <span className="block text-[15px] font-medium text-slate-800">
+              Оюутны зөвлөлийн гишүүн
+            </span>
+            <span className="block text-[13px] text-slate-500">
+              «Оюутны зөвлөл»-ийн нэрээр зарлал, санал асуулга оруулна.
+            </span>
+          </span>
+        </label>
+      )}
+
       {!user && (
         <Field
           label="Нууц үг"

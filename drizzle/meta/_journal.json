@@ -127,6 +127,13 @@
       "when": 1794396477071,
       "tag": "0017_drop_archive",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794402906788,
+      "tag": "0018_posts",
+      "breakpoints": true
     }
   ]
 }

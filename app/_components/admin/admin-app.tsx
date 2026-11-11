@@ -8,12 +8,14 @@ import type { CampusSite } from "../../_lib/geo";
 import type { SessionUser } from "../../_lib/types";
 import { logout } from "../../_server/auth/actions";
 import { AppShell, type NavItem } from "../app-shell";
-import { BookIcon, MapPinIcon, UsersIcon } from "../icons";
+import { BookIcon, MapPinIcon, MegaphoneIcon, UsersIcon } from "../icons";
+import { PostsPage } from "../posts/posts-page";
+import { type PostItem, postSourcesFor } from "../../_lib/posts";
 import { AdminPanel } from "./admin-panel";
 import { CampusPanel } from "./campus-panel";
 import { CoursesPanel } from "./courses-panel";
 
-type AdminView = "users" | "courses" | "campus";
+type AdminView = "users" | "courses" | "campus" | "posts";
 
 const ADMIN_NAV: NavItem<AdminView>[] = [
   {
@@ -29,6 +31,12 @@ const ADMIN_NAV: NavItem<AdminView>[] = [
     icon: <BookIcon />,
   },
   {
+    id: "posts",
+    label: "Зарлал",
+    shortLabel: "Зарлал",
+    icon: <MegaphoneIcon />,
+  },
+  {
     id: "campus",
     label: "Байршил",
     shortLabel: "Байршил",
@@ -41,11 +49,13 @@ export function AdminApp({
   users,
   courses,
   sites,
+  posts,
 }: {
   user: SessionUser;
   users: AdminUser[];
   courses: AdminCourse[];
   sites: CampusSite[];
+  posts: PostItem[];
 }) {
   const { notice, notify, dismissNotice } = useNotice();
   const [view, setView] = useState<AdminView>("users");
@@ -67,6 +77,12 @@ export function AdminApp({
     >
       {view === "courses" ? (
         <CoursesPanel courses={courses} users={users} notify={notify} />
+      ) : view === "posts" ? (
+        <PostsPage
+          posts={posts}
+          sources={postSourcesFor(user)}
+          notify={notify}
+        />
       ) : view === "campus" ? (
         <CampusPanel sites={sites} notify={notify} />
       ) : (

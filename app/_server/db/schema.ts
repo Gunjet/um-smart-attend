@@ -32,6 +32,8 @@ export const users = pgTable(
     studentCode: text("student_code").unique(),
     /** Оюутны анги (хөтөлбөр + курс), жишээ нь "МТ-1". */
     classGroup: text("class_group"),
+    /** Оюутны зөвлөлийн гишүүн — «Оюутны зөвлөл»-ийн нэрээр зарлал оруулна. */
+    isCouncil: boolean("is_council").notNull().default(false),
     passwordHash: text("password_hash").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -301,3 +303,65 @@ export const leaveRequests = pgTable(
 
 export type UserRow = typeof users.$inferSelect;
 export type NewUserRow = typeof users.$inferInsert;
+
+/* ------------------------------- Зарлал ------------------------------- */
+
+/** Зарлалыг хэний нэрээр оруулсан: Сургалтын алба эсвэл Оюутны зөвлөл. */
+export const postSource = pgEnum("post_source", ["academic", "council"]);
+
+export const posts = pgTable(
+  "posts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    source: postSource("source").notNull(),
+    authorId: uuid("author_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    title: text("title").notNull(),
+    body: text("body").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("posts_created_idx").on(table.createdAt)],
+);
+
+/** Санал асуулгын хариултууд (байхгүй бол энгийн зарлал). */
+export const pollOptions = pgTable(
+  "poll_options",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    position: smallint("position").notNull(),
+  },
+  (table) => [index("poll_options_post_idx").on(table.postId)],
+);
+
+/**
+ * Хэрэглэгч бүр нэг санал асуулгад нэг л санал өгнө (солих боломжтой).
+ * Хэн юу сонгосныг хэнд ч харуулахгүй — зөвхөн нийт тоо.
+ */
+export const pollVotes = pgTable(
+  "poll_votes",
+  {
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    optionId: uuid("option_id")
+      .notNull()
+      .references(() => pollOptions.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.postId, table.userId] }),
+    index("poll_votes_option_idx").on(table.optionId),
+  ],
+);

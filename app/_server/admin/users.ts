@@ -16,6 +16,7 @@ export async function listUsersForAdmin(): Promise<AdminUser[]> {
       email: schema.users.email,
       studentCode: schema.users.studentCode,
       classGroup: schema.users.classGroup,
+      isCouncil: schema.users.isCouncil,
       passkeyRegistered: sql<boolean>`exists (select 1 from passkeys p where p.user_id = "users"."id")`,
       hasHistory: sql<boolean>`(
         exists (select 1 from attendance_records r where r.student_id = "users"."id" or r.marked_by = "users"."id")

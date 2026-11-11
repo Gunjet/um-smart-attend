@@ -193,6 +193,9 @@ export function AdminPanel({
                         · {user.classGroup}
                       </span>
                     )}
+                    {user.isCouncil && (
+                      <span className="font-sans text-sky-800"> · Зөвлөл</span>
+                    )}
                   </p>
                 </div>
                 <RolePill role={user.role} />
@@ -303,9 +306,16 @@ export function AdminPanel({
                       {user.role !== "student" ? (
                         <span className="text-slate-300">—</span>
                       ) : (
-                        (user.classGroup ?? (
-                          <span className="text-amber-700">Сонгоогүй</span>
-                        ))
+                        <>
+                          {user.classGroup ?? (
+                            <span className="text-amber-700">Сонгоогүй</span>
+                          )}
+                          {user.isCouncil && (
+                            <span className="ml-1.5 rounded-md bg-sky-50 px-1.5 py-0.5 text-[12px] font-medium text-sky-800">
+                              Зөвлөл
+                            </span>
+                          )}
+                        </>
                       )}
                     </td>
                     <td className="border-b border-slate-100 px-3 py-3 text-sm">

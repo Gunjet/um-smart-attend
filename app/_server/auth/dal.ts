@@ -13,6 +13,7 @@ export function toSessionUser(user: UserRow): SessionUser {
     name: user.fullName,
     ...nameParts(user.fullName),
     studentCode: user.studentCode,
+    isCouncil: user.role === "student" && user.isCouncil,
   };
 }
 

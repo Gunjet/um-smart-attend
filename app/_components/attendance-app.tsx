@@ -9,6 +9,7 @@ import type {
   TodayAttendance,
 } from "../_lib/dto";
 import type { LeaveRequestItem } from "../_lib/leave";
+import { type PostItem, postSourcesFor } from "../_lib/posts";
 import type { AttendanceRecord, SessionUser } from "../_lib/types";
 import { logout } from "../_server/auth/actions";
 import { AppShell, type NavItem } from "./app-shell";
@@ -17,8 +18,10 @@ import {
   CheckCircleIcon,
   ClockIcon,
   DashboardIcon,
+  MegaphoneIcon,
   ReportIcon,
 } from "./icons";
+import { PostsPage } from "./posts/posts-page";
 import { LeavePage } from "./student/leave-page";
 import { Timetable } from "./student/timetable";
 import { StudentHome } from "./student/student-home";
@@ -26,7 +29,7 @@ import { TeacherDashboard } from "./teacher/teacher-dashboard";
 import { LeaveReview } from "./teacher/leave-review";
 import { TeacherReport } from "./teacher/teacher-report";
 
-type TeacherView = "dashboard" | "report" | "leave";
+type TeacherView = "dashboard" | "report" | "leave" | "posts";
 
 const TEACHER_NAV: NavItem<TeacherView>[] = [
   {
@@ -43,7 +46,7 @@ const TEACHER_NAV: NavItem<TeacherView>[] = [
   },
 ];
 
-type StudentView = "attendance" | "timetable" | "leave";
+type StudentView = "attendance" | "timetable" | "leave" | "posts";
 
 const STUDENT_NAV: NavItem<StudentView>[] = [
   {
@@ -63,6 +66,12 @@ const STUDENT_NAV: NavItem<StudentView>[] = [
     label: "Чөлөөний хүсэлт",
     shortLabel: "Чөлөө",
     icon: <CalendarIcon />,
+  },
+  {
+    id: "posts",
+    label: "Зарлал",
+    shortLabel: "Зарлал",
+    icon: <MegaphoneIcon />,
   },
 ];
 
@@ -85,11 +94,13 @@ export function TeacherApp({
   courses,
   records,
   leaveRequests,
+  posts,
 }: {
   user: SessionUser;
   courses: TeacherCourse[];
   records: AttendanceRecord[];
   leaveRequests: LeaveRequestItem[];
+  posts: PostItem[];
 }) {
   const { notify, shellProps } = useShell(user, "Багшийн эрх");
   const [view, setView] = useState<TeacherView>("dashboard");
@@ -106,6 +117,12 @@ export function TeacherApp({
         : "Чөлөөний хүсэлт",
       shortLabel: pendingLeave ? `Хүсэлт · ${pendingLeave}` : "Хүсэлт",
       icon: <CalendarIcon />,
+    },
+    {
+      id: "posts",
+      label: "Зарлал",
+      shortLabel: "Зарлал",
+      icon: <MegaphoneIcon />,
     },
   ];
 
@@ -125,6 +142,12 @@ export function TeacherApp({
         />
       ) : view === "leave" ? (
         <LeaveReview requests={leaveRequests} notify={notify} />
+      ) : view === "posts" ? (
+        <PostsPage
+          posts={posts}
+          sources={postSourcesFor(user)}
+          notify={notify}
+        />
       ) : (
         <TeacherDashboard
           courses={courses}
@@ -146,6 +169,7 @@ export function StudentApp({
   todayAttendance,
   timetable,
   classGroup,
+  posts,
 }: {
   user: SessionUser;
   courses: StudentCourse[];
@@ -158,6 +182,7 @@ export function StudentApp({
   timetable: TimetableCourse[];
   /** Оюутны анги (хуваарийн анхдагч шүүлтүүр). */
   classGroup: string | null;
+  posts: PostItem[];
 }) {
   const { notify, shellProps } = useShell(user, "Оюутны эрх");
   const [view, setView] = useState<StudentView>("attendance");
@@ -170,6 +195,12 @@ export function StudentApp({
     >
       {view === "timetable" ? (
         <Timetable courses={timetable} defaultGroup={classGroup} />
+      ) : view === "posts" ? (
+        <PostsPage
+          posts={posts}
+          sources={postSourcesFor(user)}
+          notify={notify}
+        />
       ) : view === "leave" ? (
         <LeavePage
           courses={courses}

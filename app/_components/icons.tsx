@@ -427,3 +427,18 @@ export function CalendarIcon({ className = "size-[18px]" }: IconProps) {
     </svg>
   );
 }
+
+export function MegaphoneIcon({ className = "size-[18px]" }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path
+        d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1Z"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}

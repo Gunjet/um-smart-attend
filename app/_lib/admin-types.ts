@@ -9,6 +9,8 @@ export type AdminUser = {
   studentCode: string | null;
   /** Оюутны анги, жишээ нь "МТ-1". */
   classGroup: string | null;
+  /** Оюутны зөвлөлийн гишүүн. */
+  isCouncil: boolean;
   /** Оюутан Face ID / хурууны хээгээ бүртгүүлсэн эсэх. */
   passkeyRegistered: boolean;
   /** Ирцийн түүхтэй (устгавал түүх нь хамт устна). */
