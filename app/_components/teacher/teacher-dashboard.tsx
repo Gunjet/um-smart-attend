@@ -34,8 +34,7 @@ export function TeacherDashboard({
   const now = useNow();
   // Өнөөдөр орох хичээлүүд (нээлттэй ирцтэй хичээл үргэлж харагдана).
   const courses = allCourses.filter(
-    (course) =>
-      !course.archived && (course.scheduledToday || course.openSessionId),
+    (course) => course.scheduledToday || course.openSessionId,
   );
   const [selectedId, setSelectedId] = useState<string | null>(
     () =>

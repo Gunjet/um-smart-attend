@@ -79,15 +79,12 @@ export async function openSession(courseId: string): Promise<ActionResult> {
         id: courses.id,
         slots: courses.slots,
         scheduledToday: scheduledTodaySql,
-        archived: sql<boolean>`${courses.archivedAt} is not null`,
         todayDow: sql<number>`extract(isodow from now() at time zone 'Asia/Ulaanbaatar')::int`,
       })
       .from(courses)
       .where(and(eq(courses.id, courseId), eq(courses.teacherId, teacher.id)))
       .limit(1);
-    if (!course || course.archived) {
-      return { ok: false, error: "Хичээл олдсонгүй." };
-    }
+    if (!course) return { ok: false, error: "Хичээл олдсонгүй." };
     if (!course.scheduledToday) {
       return { ok: false, error: "Энэ хичээл өнөөдрийн хуваарьт ороогүй." };
     }

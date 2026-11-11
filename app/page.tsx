@@ -14,6 +14,7 @@ import {
 import { getCampusSites } from "./_server/settings/campus";
 import {
   getStudentCourses,
+  getStudentToday,
   getTeacherCourses,
   getTeacherReportRecords,
   listCoursesForAdmin,
@@ -62,14 +63,21 @@ async function AuthGate() {
     );
   }
 
-  const [courses, sites, passkeyRegistered, leaveRequests, today] =
-    await Promise.all([
-      getStudentCourses(user.id),
-      getCampusSites(),
-      hasPasskey(user.id),
-      getStudentLeaveRequests(user.id),
-      getUlaanbaatarToday(),
-    ]);
+  const [
+    courses,
+    sites,
+    passkeyRegistered,
+    leaveRequests,
+    today,
+    todayAttendance,
+  ] = await Promise.all([
+    getStudentCourses(user.id),
+    getCampusSites(),
+    hasPasskey(user.id),
+    getStudentLeaveRequests(user.id),
+    getUlaanbaatarToday(),
+    getStudentToday(user.id),
+  ]);
   return (
     <StudentApp
       user={user}
@@ -78,6 +86,7 @@ async function AuthGate() {
       passkeyRegistered={passkeyRegistered}
       leaveRequests={leaveRequests}
       today={today}
+      todayAttendance={todayAttendance}
     />
   );
 }

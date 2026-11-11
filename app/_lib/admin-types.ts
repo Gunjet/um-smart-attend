@@ -11,9 +11,7 @@ export type AdminUser = {
   classGroup: string | null;
   /** Оюутан Face ID / хурууны хээгээ бүртгүүлсэн эсэх. */
   passkeyRegistered: boolean;
-  /** Архивласан (нэвтрэх боломжгүй). */
-  archived: boolean;
-  /** Ирцийн түүхтэй (устгавал архивлагдана). */
+  /** Ирцийн түүхтэй (устгавал түүх нь хамт устна). */
   hasHistory: boolean;
   /** ISO огноо */
   createdAt: string;

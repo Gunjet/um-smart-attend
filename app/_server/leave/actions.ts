@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import * as z from "zod";
@@ -94,7 +94,6 @@ export async function createLeaveRequest(
         and(
           eq(enrollments.studentId, student.id),
           eq(enrollments.courseId, courseId),
-          isNull(courses.archivedAt),
         ),
       )
       .limit(1);

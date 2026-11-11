@@ -15,7 +15,6 @@ import {
   deleteUser,
   importStudents,
   resetPasskey,
-  restoreUser,
   resetPassword,
   updateUser,
 } from "../../_server/admin/actions";
@@ -418,40 +417,23 @@ export function ConfirmForm({
   onDone,
 }: {
   user: AdminUser;
-  kind: "delete" | "device" | "restore";
+  kind: "delete" | "device";
   onCancel: () => void;
   onDone: (message: string) => void;
 }) {
   const [state, onSubmit, pending] = useAdminAction(
-    kind === "delete"
-      ? deleteUser
-      : kind === "restore"
-        ? restoreUser
-        : resetPasskey,
+    kind === "delete" ? deleteUser : resetPasskey,
     onDone,
   );
-  const archive = kind === "delete" && user.hasHistory;
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <input type="hidden" name="id" value={user.id} />
       <p className="text-[15px] text-slate-700">
         {kind === "delete" ? (
-          archive ? (
-            <>
-              <strong>{user.name}</strong> ирцийн түүхтэй тул{" "}
-              <strong>архивлагдана</strong>: нэвтрэх боломжгүй болж,
-              хичээлүүдээс хасагдана. Ирцийн тайлан хэвээр хадгалагдана.
-            </>
-          ) : (
-            <>
-              <strong>{user.name}</strong>-ийн бүртгэлийг бүрмөсөн устгах уу?
-              Энэ үйлдлийг буцаах боломжгүй.
-            </>
-          )
-        ) : kind === "restore" ? (
           <>
-            <strong>{user.name}</strong>-ийг сэргээх үү? Дахин нэвтэрч,
-            ангийнхаа хичээлүүдэд бүртгэгдэнэ.
+            <strong>{user.name}</strong>-ийн бүртгэлийг бүрмөсөн устгах уу?
+            {user.hasHistory && " Түүний бүх ирцийн бүртгэл хамт устна."} Энэ
+            үйлдлийг буцаах боломжгүй.
           </>
         ) : (
           <>
@@ -463,15 +445,7 @@ export function ConfirmForm({
       <FormError message={state?.error} />
       <FormActions
         onCancel={onCancel}
-        submitLabel={
-          kind === "delete"
-            ? archive
-              ? "Архивлах"
-              : "Устгах"
-            : kind === "restore"
-              ? "Сэргээх"
-              : "Face ID устгах"
-        }
+        submitLabel={kind === "delete" ? "Устгах" : "Face ID устгах"}
         pending={pending}
         danger={kind === "delete"}
       />

@@ -19,8 +19,6 @@ export type TeacherCourse = {
   scheduledToday: boolean;
   /** Нээлттэй ирцийн session (байхгүй бол null). */
   openSessionId: string | null;
-  /** Архивласан хичээл (зөвхөн тайланд харагдана). */
-  archived: boolean;
   /** Нээлттэй ирц хэддэх парынх. */
   openPeriod: number | null;
   /** Өнөөдөр хамгийн сүүлд хаасан ирц (эцсийн жагсаалтыг харуулна). */
@@ -82,8 +80,7 @@ export type AdminCourse = {
   teacherId: string | null;
   teacherName: string | null;
   studentIds: string[];
-  archived: boolean;
-  /** Ирцийн түүхтэй (устгавал архивлагдана). */
+  /** Ирцийн түүхтэй (устгавал түүх нь хамт устна). */
   hasHistory: boolean;
 };
 
@@ -96,3 +93,13 @@ export type CheckInStep = "code" | "passkey" | "location";
 export type CheckInResult =
   | { ok: true; message?: string }
   | { ok: false; error: string; step?: CheckInStep };
+
+/** Оюутны өнөөдрийн нэг хичээллэлт (пар) ба түүний ирц. */
+export type TodayAttendance = {
+  sessionId: string;
+  courseTitle: string;
+  period: number | null;
+  /** Ирц одоо нээлттэй эсэх. */
+  open: boolean;
+  status: AttendanceStatus;
+};

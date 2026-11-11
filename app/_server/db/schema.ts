@@ -32,8 +32,6 @@ export const users = pgTable(
     studentCode: text("student_code").unique(),
     /** Оюутны анги (хөтөлбөр + курс), жишээ нь "МТ-1". */
     classGroup: text("class_group"),
-    /** Архивласан (нэвтрэх боломжгүй, ирцийн түүх хадгалагдана). */
-    archivedAt: timestamp("archived_at", { withTimezone: true }),
     passwordHash: text("password_hash").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -92,8 +90,6 @@ export const courses = pgTable(
     teacherId: uuid("teacher_id").references(() => users.id, {
       onDelete: "set null",
     }),
-    /** Архивласан (хуваарь, оюутанд харагдахгүй; тайлан хадгалагдана). */
-    archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

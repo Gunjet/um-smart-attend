@@ -1,7 +1,7 @@
 "use server";
 
 import { randomInt } from "node:crypto";
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import * as z from "zod";
@@ -313,21 +313,7 @@ export async function resetPasskey(
 
 /* --------------------------------- Устгах ---------------------------------- */
 
-/** Ирцийн түүхтэй (ирц бүртгүүлсэн, ирц нээсэн, хичээл заадаг) эсэх. */
-async function userHasHistory(id: string) {
-  const [row] = await getDb().execute<{ has: boolean }>(sql`
-    select (
-      exists (select 1 from attendance_records where student_id = ${id} or marked_by = ${id})
-      or exists (select 1 from attendance_sessions where opened_by = ${id})
-      or exists (select 1 from courses where teacher_id = ${id})
-    ) as has`);
-  return Boolean(row?.has);
-}
-
-/**
- * Ирцийн түүхгүй бол бүрмөсөн устгана. Түүхтэй бол архивлана: нэвтрэх
- * боломжгүй болж, хичээлүүдээс хасагдана, харин тайлан хэвээр үлдэнэ.
- */
+/** Хэрэглэгчийг бүрмөсөн устгана (ирцийн бүртгэл, хүсэлт хамт устна). */
 export async function deleteUser(
   _previous: AdminActionState,
   formData: FormData,
@@ -336,64 +322,14 @@ export async function deleteUser(
   if (!admin) return FORBIDDEN;
   const id = field(formData, "id");
   if (id === admin.id) return { error: "Өөрийн бүртгэлийг устгах боломжгүй." };
-  let archived = false;
   try {
-    const db = getDb();
-    if (await userHasHistory(id)) {
-      archived = true;
-      await db.transaction(async (tx) => {
-        await tx
-          .update(schema.users)
-          .set({ archivedAt: new Date(), updatedAt: new Date() })
-          .where(eq(schema.users.id, id));
-        await tx.delete(schema.sessions).where(eq(schema.sessions.userId, id));
-        await tx
-          .delete(schema.enrollments)
-          .where(eq(schema.enrollments.studentId, id));
-      });
-    } else {
-      await db.delete(schema.users).where(eq(schema.users.id, id));
-    }
+    await getDb().delete(schema.users).where(eq(schema.users.id, id));
   } catch (error) {
     console.error("deleteUser failed", error);
     return SERVER_ERROR;
   }
   refresh();
-  return {
-    ok: true,
-    message: archived
-      ? "Ирцийн түүхтэй тул архивлагдлаа. Тайлан хадгалагдсан."
-      : "Хэрэглэгч устгагдлаа.",
-  };
-}
-
-/** Архивласан хэрэглэгчийг сэргээнэ (оюутан бол ангийн хичээлүүдэд дахин бүртгэнэ). */
-export async function restoreUser(
-  _previous: AdminActionState,
-  formData: FormData,
-): Promise<AdminActionState> {
-  if (!(await authorizeAdmin())) return FORBIDDEN;
-  const id = field(formData, "id");
-  try {
-    await getDb().transaction(async (tx) => {
-      const [user] = await tx
-        .update(schema.users)
-        .set({ archivedAt: null, updatedAt: new Date() })
-        .where(eq(schema.users.id, id))
-        .returning({
-          role: schema.users.role,
-          classGroup: schema.users.classGroup,
-        });
-      if (user?.role === "student") {
-        await syncStudentGroup(tx, id, null, user.classGroup);
-      }
-    });
-  } catch (error) {
-    console.error("restoreUser failed", error);
-    return SERVER_ERROR;
-  }
-  refresh();
-  return { ok: true, message: "Хэрэглэгч сэргээгдлээ." };
+  return { ok: true, message: "Хэрэглэгч устгагдлаа." };
 }
 
 /* -------------------------- Оюутныг CSV-ээр оруулах -------------------------- */

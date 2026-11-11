@@ -6,6 +6,7 @@ import type {
   RosterEntry,
   StudentCourse,
   TeacherCourse,
+  TodayAttendance,
 } from "../../_lib/dto";
 import { nameParts } from "../../_lib/names";
 import {
@@ -73,7 +74,6 @@ export async function getTeacherCourses(
       todayDow: todayDowSql,
       enrolled: sql<number>`(select count(*)::int from enrollments e where e.course_id = ${courses.id})`,
       openSessionId: attendanceSessions.id,
-      archived: sql<boolean>`${courses.archivedAt} is not null`,
       openPeriod: attendanceSessions.period,
       closedTodaySessionId: sql<string | null>`(
         select s.id from attendance_sessions s
@@ -311,9 +311,7 @@ export async function getStudentCourses(
         isNull(attendanceSessions.closedAt),
       ),
     )
-    .where(
-      and(eq(enrollments.studentId, studentId), isNull(courses.archivedAt)),
-    )
+    .where(eq(enrollments.studentId, studentId))
     .orderBy(asc(courses.title));
 
   return rows.map(({ startDate, endDate, slots, ...row }) => ({
@@ -321,6 +319,48 @@ export async function getStudentCourses(
     checkedIn: Boolean(row.checkedIn),
     time: formatSlots(slots),
     schedule: formatDateRange(startDate, endDate),
+  }));
+}
+
+/** Оюутны өнөөдрийн (Улаанбаатарын цагаар) хичээллэлтүүд ба ирц, цагийн дарааллаар. */
+export async function getStudentToday(
+  studentId: string,
+): Promise<TodayAttendance[]> {
+  const rows = await getDb()
+    .select({
+      sessionId: attendanceSessions.id,
+      courseTitle: courses.title,
+      period: attendanceSessions.period,
+      open: sql<boolean>`${attendanceSessions.closedAt} is null`,
+      status: attendanceRecords.status,
+    })
+    .from(attendanceSessions)
+    .innerJoin(courses, eq(courses.id, attendanceSessions.courseId))
+    .innerJoin(
+      enrollments,
+      and(
+        eq(enrollments.courseId, courses.id),
+        eq(enrollments.studentId, studentId),
+      ),
+    )
+    .leftJoin(
+      attendanceRecords,
+      and(
+        eq(attendanceRecords.sessionId, attendanceSessions.id),
+        eq(attendanceRecords.studentId, studentId),
+      ),
+    )
+    .where(
+      sql`(${attendanceSessions.openedAt} at time zone 'Asia/Ulaanbaatar')::date = (now() at time zone 'Asia/Ulaanbaatar')::date`,
+    )
+    .orderBy(asc(attendanceSessions.openedAt));
+
+  return rows.map((row) => ({
+    sessionId: row.sessionId,
+    courseTitle: row.courseTitle,
+    period: row.period,
+    open: Boolean(row.open),
+    status: row.status ? STATUS_LABEL[row.status] : "Хүлээгдэж байна",
   }));
 }
 
@@ -339,7 +379,6 @@ export async function listCoursesForAdmin(): Promise<AdminCourse[]> {
       slots: courses.slots,
       teacherId: courses.teacherId,
       teacherName: teacher.fullName,
-      archived: sql<boolean>`${courses.archivedAt} is not null`,
       hasHistory: sql<boolean>`exists (select 1 from attendance_sessions s where s.course_id = ${courses.id})`,
       studentIds: sql<string[]>`coalesce(
         (select array_agg(e.student_id::text) from enrollments e where e.course_id = ${courses.id}),

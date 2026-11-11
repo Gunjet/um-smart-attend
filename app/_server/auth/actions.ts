@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import * as z from "zod";
@@ -79,12 +79,10 @@ async function authenticate({
         ? and(
             eq(schema.users.role, "student"),
             eq(schema.users.studentCode, identifier.toUpperCase()),
-            isNull(schema.users.archivedAt),
           )
         : and(
             inArray(schema.users.role, ["teacher", "admin"]),
             eq(schema.users.email, identifier.toLowerCase()),
-            isNull(schema.users.archivedAt),
           ),
     )
     .limit(1);

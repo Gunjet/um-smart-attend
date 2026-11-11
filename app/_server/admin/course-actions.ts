@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray, isNull, notInArray } from "drizzle-orm";
+import { and, eq, inArray, notInArray } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import * as z from "zod";
@@ -8,7 +8,6 @@ import type { AdminActionState } from "../../_lib/admin-types";
 import { CLASS_GROUPS, sortClassGroups } from "../../_lib/programs";
 import { PERIODS, sortSlots } from "../../_lib/schedule";
 import { getCurrentUser } from "../auth/dal";
-import { finalizeSession } from "../attendance/sessions";
 import { syncCourseGroups } from "../courses/enrollment-sync";
 import { getDb, schema } from "../db";
 
@@ -128,13 +127,7 @@ async function assertTeacher(teacherId: string) {
   const [row] = await getDb()
     .select({ id: users.id })
     .from(users)
-    .where(
-      and(
-        eq(users.id, teacherId),
-        eq(users.role, "teacher"),
-        isNull(users.archivedAt),
-      ),
-    )
+    .where(and(eq(users.id, teacherId), eq(users.role, "teacher")))
     .limit(1);
   return Boolean(row);
 }
@@ -219,75 +212,22 @@ export async function saveCourse(
   };
 }
 
-/**
- * Ирцийн түүхгүй хичээлийг устгана. Түүхтэй бол архивлана: хуваарь,
- * оюутанд харагдахгүй болох ч тайлан хэвээр үлдэнэ.
- */
+/** Хичээлийг бүрмөсөн устгана (ирцийн түүх, бүртгэл, чөлөөний хүсэлт хамт устна). */
 export async function deleteCourse(
-  _previous: AdminActionState,
-  formData: FormData,
-): Promise<AdminActionState> {
-  if (!(await authorizeAdmin())) return FORBIDDEN;
-  const id = field(formData, "id");
-  let archived = false;
-  try {
-    const db = getDb();
-    const [history] = await db
-      .select({ id: schema.attendanceSessions.id })
-      .from(schema.attendanceSessions)
-      .where(eq(schema.attendanceSessions.courseId, id))
-      .limit(1);
-    if (history) {
-      archived = true;
-      await db.transaction(async (tx) => {
-        // Нээлттэй ирц байвал хаана.
-        const open = await tx
-          .select({ id: schema.attendanceSessions.id })
-          .from(schema.attendanceSessions)
-          .where(
-            and(
-              eq(schema.attendanceSessions.courseId, id),
-              isNull(schema.attendanceSessions.closedAt),
-            ),
-          );
-        for (const session of open) await finalizeSession(tx, session.id, id);
-        await tx
-          .update(courses)
-          .set({ archivedAt: new Date() })
-          .where(eq(courses.id, id));
-      });
-    } else {
-      await db.delete(courses).where(eq(courses.id, id));
-    }
-  } catch (error) {
-    console.error("deleteCourse failed", error);
-    return SERVER_ERROR;
-  }
-  refresh();
-  return {
-    ok: true,
-    message: archived
-      ? "Ирцийн түүхтэй тул архивлагдлаа. Тайлан хадгалагдсан."
-      : "Хичээл устгагдлаа.",
-  };
-}
-
-export async function restoreCourse(
   _previous: AdminActionState,
   formData: FormData,
 ): Promise<AdminActionState> {
   if (!(await authorizeAdmin())) return FORBIDDEN;
   try {
     await getDb()
-      .update(courses)
-      .set({ archivedAt: null })
+      .delete(courses)
       .where(eq(courses.id, field(formData, "id")));
   } catch (error) {
-    console.error("restoreCourse failed", error);
+    console.error("deleteCourse failed", error);
     return SERVER_ERROR;
   }
   refresh();
-  return { ok: true, message: "Хичээл сэргээгдлээ." };
+  return { ok: true, message: "Хичээл устгагдлаа." };
 }
 
 /** Хичээлийн оюутнуудын жагсаалтыг сонгосон оюутнуудаар солино. */
@@ -310,13 +250,7 @@ export async function setEnrollments(
           await db
             .select({ id: users.id })
             .from(users)
-            .where(
-              and(
-                inArray(users.id, requested),
-                eq(users.role, "student"),
-                isNull(users.archivedAt),
-              ),
-            )
+            .where(and(inArray(users.id, requested), eq(users.role, "student")))
         ).map((row) => row.id)
       : [];
 

@@ -2,7 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useNotice } from "../_hooks/use-notice";
-import type { StudentCourse, TeacherCourse } from "../_lib/dto";
+import type {
+  StudentCourse,
+  TeacherCourse,
+  TodayAttendance,
+} from "../_lib/dto";
 import type { LeaveRequestItem } from "../_lib/leave";
 import type { AttendanceRecord, SessionUser } from "../_lib/types";
 import { logout } from "../_server/auth/actions";
@@ -130,6 +134,7 @@ export function StudentApp({
   passkeyRegistered,
   leaveRequests,
   today,
+  todayAttendance,
 }: {
   user: SessionUser;
   courses: StudentCourse[];
@@ -138,6 +143,7 @@ export function StudentApp({
   leaveRequests: LeaveRequestItem[];
   /** Улаанбаатарын цагаар өнөөдөр, "YYYY-MM-DD". */
   today: string;
+  todayAttendance: TodayAttendance[];
 }) {
   const { notify, shellProps } = useShell(user, "Оюутны эрх");
   const [view, setView] = useState<StudentView>("attendance");
@@ -161,6 +167,7 @@ export function StudentApp({
           courses={courses}
           locationRequired={locationRequired}
           passkeyRegistered={passkeyRegistered}
+          todayAttendance={todayAttendance}
           notify={notify}
         />
       )}

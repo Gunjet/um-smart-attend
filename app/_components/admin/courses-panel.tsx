@@ -17,7 +17,6 @@ import {
 import type { Notify } from "../../_lib/types";
 import {
   deleteCourse,
-  restoreCourse,
   saveCourse,
   setEnrollments,
 } from "../../_server/admin/course-actions";
@@ -46,7 +45,7 @@ const DIALOG_TITLE: Record<DialogState["kind"], string> = {
   create: "Хичээл нэмэх",
   edit: "Хичээл засах",
   students: "Хичээлийн оюутнууд",
-  delete: "Хичээл устгах / архивлах",
+  delete: "Хичээл устгах",
 };
 
 export function CoursesPanel({
@@ -62,12 +61,8 @@ export function CoursesPanel({
   const [dialogKey, setDialogKey] = useState(0);
   const [search, setSearch] = useState("");
 
-  const teachers = users.filter(
-    (user) => user.role === "teacher" && !user.archived,
-  );
-  const students = users.filter(
-    (user) => user.role === "student" && !user.archived,
-  );
+  const teachers = users.filter((user) => user.role === "teacher");
+  const students = users.filter((user) => user.role === "student");
 
   const open = (next: DialogState) => {
     setDialogKey((key) => key + 1);
@@ -90,8 +85,7 @@ export function CoursesPanel({
         course.teacherName ?? "",
       ].some((value) => value.toLowerCase().includes(query)),
   );
-  const visible = matches.filter((course) => !course.archived);
-  const archived = matches.filter((course) => course.archived);
+  const visible = matches;
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 md:ml-60 md:px-8">
@@ -157,7 +151,7 @@ export function CoursesPanel({
                     <PencilIcon className="size-4" />
                   </IconButton>
                   <IconButton
-                    label={course.hasHistory ? "Архивлах" : "Устгах"}
+                    label="Устгах"
                     danger
                     onClick={() => open({ kind: "delete", course })}
                   >
@@ -223,32 +217,6 @@ export function CoursesPanel({
             </p>
           )}
         </div>
-      )}
-
-      {archived.length > 0 && (
-        <section className="mt-8">
-          <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-500">
-            Архивласан хичээлүүд · {archived.length}
-          </h2>
-          <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-surface">
-            {archived.map((course) => (
-              <li
-                key={course.id}
-                className="flex items-center justify-between gap-3 px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-slate-600">
-                    {course.title}
-                  </p>
-                  <p className="font-mono text-[13px] text-slate-400">
-                    {course.code}
-                  </p>
-                </div>
-                <RestoreCourseForm course={course} notify={notify} />
-              </li>
-            ))}
-          </ul>
-        </section>
       )}
 
       <Dialog
@@ -846,49 +814,18 @@ function DeleteCourseForm({
     <form onSubmit={onSubmit} className="space-y-4">
       <input type="hidden" name="id" value={course.id} />
       <p className="text-[15px] text-slate-700">
-        {course.hasHistory ? (
-          <>
-            <strong>{course.title}</strong> ирцийн түүхтэй тул{" "}
-            <strong>архивлагдана</strong>: багш, оюутанд харагдахгүй болох ч
-            ирцийн тайлан хэвээр хадгалагдана. Хүссэн үедээ сэргээж болно.
-          </>
-        ) : (
-          <>
-            <strong>{course.title}</strong> хичээлийг устгах уу? Энэ үйлдлийг
-            буцаах боломжгүй.
-          </>
-        )}
+        <strong>{course.title}</strong> хичээлийг устгах уу?
+        {course.hasHistory &&
+          " Хичээлийн бүх ирцийн түүх, чөлөөний хүсэлт хамт устна."}{" "}
+        Энэ үйлдлийг буцаах боломжгүй.
       </p>
       <FormError message={state?.error} />
       <FormActions
         onCancel={onCancel}
-        submitLabel={course.hasHistory ? "Архивлах" : "Устгах"}
+        submitLabel="Устгах"
         pending={pending}
         danger
       />
-    </form>
-  );
-}
-
-function RestoreCourseForm({
-  course,
-  notify,
-}: {
-  course: AdminCourse;
-  notify: Notify;
-}) {
-  const [state, onSubmit, pending] = useAdminAction(restoreCourse, notify);
-  return (
-    <form onSubmit={onSubmit} className="shrink-0 text-right">
-      <input type="hidden" name="id" value={course.id} />
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-slate-50 disabled:opacity-50"
-      >
-        {pending ? "…" : "Сэргээх"}
-      </button>
-      <FormError message={state?.error} />
     </form>
   );
 }

@@ -146,6 +146,8 @@ export function CheckInFlow({
         setValidCode(null);
         void preparePasskey();
         notify(result.message ?? "Ирц бүртгэгдлээ.");
+        // Дээд талын «Ирц бүртгэгдлээ» баталгааг харагдуулна.
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }),
     [fail, locationRequired, notify, preparePasskey],
   );
